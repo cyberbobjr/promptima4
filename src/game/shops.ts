@@ -17,6 +17,7 @@ import {
 } from "./prompts";
 import { karmaDec, karmaInc, Virtue } from "./karma";
 import { canAct, isAlive } from "./party";
+import { playEffect, SFX } from "../audio/speaker";
 
 type Player = Game["save"]["players"][number];
 
@@ -137,7 +138,7 @@ async function equipMenu(g: Game, d: EquipDesc, name: string, keeper: string,
     if (k === " " || k === "Enter" || k === "Escape") { c = ""; nl(g); }
     else if (k === "B" || k === "b") c = "b";
     else if (k === "S" || k === "s") c = "s";
-    if (c === null) continue;
+    if (c === null) { await playEffect(SFX.ERROR); continue; } // 1000:D136 / D55F
     if (c) {
       putc(g, c);
       nl(g);
@@ -186,7 +187,7 @@ async function equipSell(g: Game, d: EquipDesc, maxLetter: string, t: {
       } else {
         await say(g, t.howManyX, d.s.names[item], t.wishSell);
         n = await readNumber(g, 2);
-        if (n < 1) { if (n === 0) await say(g, t.tooBad); return; }
+        if (n < 1) { if (n === 0) await say(g, t.tooBad); else await playEffect(SFX.ERROR); return; } // 1000:CF5A
         if (d.inv[item] < n) { await say(g, t.notMany); return; }
         await say(g, t.giveN);
         putNum(g, (d.prices[item] * n) >> 1);
@@ -230,6 +231,7 @@ async function weaponShop(g: Game, town: TownId) {
       for (;;) {
         item = (await askKey(g, S.interest, "B", "O")) - 0x41;
         if (item < 1 || shop.items.includes(item)) break;
+        await playEffect(SFX.ERROR); // not sold here (1000:CE2D)
       }
       if (item < 0) break;
       if (g.save.gold < WEAPON_PRICES[item]) await say(g, S.noFunds);
@@ -239,7 +241,7 @@ async function weaponShop(g: Game, town: TownId) {
         nl(g);
         await say(g, S.howMany);
         const n = await readNumber(g, 2);
-        if (n < 1) { if (n === 0) await say(g, S.tooBad); }
+        if (n < 1) { if (n === 0) await say(g, S.tooBad); else await playEffect(SFX.ERROR); } // 1000:CE8F
         else await equipPay(g, d, shop.keeper, n, item, S.fine, S.fear);
       }
       await say(g, S.anythingElse);
@@ -274,6 +276,7 @@ async function armourShop(g: Game, town: TownId) {
       for (;;) {
         item = (await askKey(g, S.what, "B", "G")) - 0x41;
         if (item < 1 || shop.items.includes(item)) break;
+        await playEffect(SFX.ERROR); // not sold here (1000:D27A)
       }
       if (item < 0) return;
       if (g.save.gold < ARMOUR_PRICES[item]) await say(g, S.cantPay);
@@ -343,7 +346,7 @@ async function reagentShop(g: Game, town: TownId) {
             setStats(g, reagentsView(g));
             await say(g, S.veryGood);
           }
-        }
+        } else if (paid < 0) await playEffect(SFX.ERROR); // 1000:CC23
       }
       await say(g, S.anything);
       again = await askYN(g);
@@ -401,7 +404,7 @@ async function tavern(g: Game, town: TownId) {
     putNum(g, tv.specialtyPrice);
     await say(g, S.plates);
     let n = await readNumber(g, 2);
-    if (n < 1) return true;
+    if (n < 1) { if (n < 0) await playEffect(SFX.ERROR); return true; } // 1000:DD7B
     let bought = 0;
     for (; n !== 0; n--) {
       if (s.gold < tv.specialtyPrice) {
@@ -427,7 +430,7 @@ async function tavern(g: Game, town: TownId) {
     ales++;
     await say(g, S.mug);
     let paid = await readNumber(g, 2);
-    if (paid < 1) return true;
+    if (paid < 1) { if (paid < 0) await playEffect(SFX.ERROR); return true; } // 1000:DE80
     if (paid < 2) { await say(g, S.wontPay); return true; }
     if (paid > s.gold) { await say(g, S.noGold); return true; }
     s.gold -= paid;
@@ -468,6 +471,7 @@ async function tavern(g: Game, town: TownId) {
       k = (await g.getKey()).toUpperCase();
       if (k === " " || k === "ESCAPE" || k === "ENTER") { nl(g); return; }
       if (k === "F" || k === "A") break;
+      await playEffect(SFX.ERROR); // 1000:E03D
     }
     putc(g, k);
     nl(g);
@@ -577,6 +581,8 @@ async function healer(g: Game, town: TownId) {
     if (c === "N") await say(g, S.cannot);
     return false;
   };
+  // 1000:DA79: the screen and the member's line flash with the magic sound (pulse width 0xC0)
+  const healed = () => playEffect(SFX.MAGIC, 0xc0);
 
   await say(g, S.welcome, def.name);
   nl(g);
@@ -600,21 +606,21 @@ async function healer(g: Game, town: TownId) {
           await pause(g, 5);
           await say(g, S.free);
         } else ok = await pay(HEALER_PRICES.cure);
-        if (ok) p.status = "G";
+        if (ok) { p.status = "G"; await healed(); }
       } else await say(g, S.noPoison);
     } else if (p && c === 0x42) {
       // 1000:DB29 heal
       if (p.hp === p.hpMax) await say(g, S.healthy);
       else {
         await say(g, S.heal);
-        if (s.gold >= HEALER_PRICES.heal) { if (await pay(HEALER_PRICES.heal)) p.hp = p.hpMax; }
+        if (s.gold >= HEALER_PRICES.heal) { if (await pay(HEALER_PRICES.heal)) { p.hp = p.hpMax; await healed(); } }
         else await say(g, S.noGold);
       }
     } else if (p && c === 0x43) {
       // 1000:DB93 resurrect
       if (p.status === "D") {
         await say(g, S.res);
-        if (s.gold >= HEALER_PRICES.resurrect) { if (await pay(HEALER_PRICES.resurrect)) p.status = "G"; }
+        if (s.gold >= HEALER_PRICES.resurrect) { if (await pay(HEALER_PRICES.resurrect)) { p.status = "G"; await healed(); } }
         else await say(g, S.noGold2);
       } else await say(g, S.notDead);
     }

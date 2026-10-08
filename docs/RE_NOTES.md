@@ -250,3 +250,119 @@ Source: unpacked AVATAR.EXE image, DS = image 0xF0D0. (Scratch extraction script
 - Exact semantics of horn (DS:95A4=1, DS:946E=10) not traced.
 - Tile 0x4C at (233,233) also triggers Abyss entry (probably the tile after the candle sequence) - not traced.
 - Telescope (8FB1) handler not detailed.
+
+## PC speaker (sound effects)
+
+### Mechanism
+- **1000:1D47(n, p1, p2)** is the only sound entry point of AVATAR.EXE (98 call sites). `bl = n`, `cl = p1`,
+  `ch = p2`; it returns at once when the sound flag **DS:06A6** is 0 or `n >= 13`, else calls the near routine
+  `word [DS:06A7 + 2n]`. DS:06A6 is 1 at start-up.
+- The routines never program the PIT (no port 0x42/0x43 access anywhere in the program). Each one reads port
+  0x61, clears bits 0-1 (timer gate off, speaker data off) and toggles bit 1 (`xor al,2; out 61h,al`) between
+  busy-wait loops: the waveform is a 1-bit square wave whose half-periods are the loop lengths. Port 0x61 is
+  restored at the end. No other routine touches the speaker.
+- **Timing unit**: the delay counts are multiplied by **DS:8728**, measured once at start-up by 1000:0012: INT 1Ch
+  is hooked, the loop at 1000:00CF..00EC (INC mem / JS / MOV DX,[BX+1F40] / MOV DX,ES:[BX+SI+1F40] /
+  MOV DX,[BP+SI] / MOV DX,0 / MOV CL,14h / RCR DX,CL / CMP CS:[10h],AX / JZ: 232 cycles on an 8088) runs for one
+  timer tick (65536/1193182 s = 54.925 ms), and the count / 1000 (minimum 1) is kept. A calibrated loop of
+  `c` cycles run `K*m` times therefore lasts `m * c * 54925.4 / 232000 µs = m * c * 0.23675 µs` on any CPU. The
+  same factor drives the moon/animation countdown (1000:1744). Two loops are not calibrated (effects 0 and 4);
+  for them a 4.77 MHz PC is assumed. Loop overheads (`out`, `mul`, the random call) are ignored.
+- **V)olume**: key word 0x2F76 (v) in the three dispatchers (world/town 1000:1AD4, combat 1000:5BC2, dungeon
+  1000:85D9) calls **1000:70AD**: prints DS:222E, flips DS:06A6, prints DS:2237 (now on) or DS:223B (now off).
+  The command then ends the turn like any other (world 1000:1C06, combat 1000:5B73, dungeon 1000:857E + 87E2).
+  The flag is not saved.
+- Noise effects draw their bytes from the game generator 1000:1771.
+- Many effects come with screen effects: 1000:2241 (driver slot 0x12, whole-screen invert) before and after
+  effect 9; 1000:224B(i) (slot 0x16, invert member i's status line) around effect 7 (helpers 1000:09D9, 9764,
+  96B9, B730) and around effect 6 in 1000:1584 / 1C53 / 87E2; 1000:095E (screen shake) after effect 6 in 0501/05CE.
+  The port plays the sounds only (no screen invert).
+
+### Effect table DS:06A7
+Durations from the model above ("half" = half-period, the time between two toggles).
+
+| n | routine | waveform | duration |
+|---|---|---|---|
+| 0 | 1D69 | one pulse: speaker on for 50 passes of DEC/JNZ (18 cycles, not calibrated) = 0.19 ms | 0.2 ms (a click) |
+| 1 | 1D82 | 16 halves of 0xCA*K passes of DEC/PUSHF/PUSH/POP/POPF/JNZ (71 cycles) = 3.40 ms: 147 Hz buzz | 54 ms |
+| 2 | 1DA8 | 48 halves of 0xE0*K x 18 cycles = 0.95 ms (524 Hz), then effect 1 | 100 ms |
+| 3 | 1EB3 | bl = 5..255: half = K*bl/2 x 24 cycles (bl x 2.84 µs): falling sweep, ultrasonic down to 690 Hz | 93 ms |
+| 4 | 1EFD | bl = 0 first: K*0/2 = 0 and `dec cx` wraps, 65536 x 24 cycles (not calibrated) = 330 ms of silence; then bl = 255..128, half = bl x 2.84 µs: rising 690 -> 1370 Hz | 399 ms |
+| 5 | 1F4A | bl = 128..255, half = K*bl/2 x 30 cycles (bl x 3.55 µs): falling 1090 -> 555 Hz | 87 ms |
+| 6 | 1E7F | 255 halves, r = (rand & 0x7F) \| 1, half = (3*r*K/4) x LOOP (17 cycles) = r x 3.02 µs (3..383 µs): crackling noise | ~50 ms |
+| 7 | 1E53 | 255 halves, r = (rand & 0x7F) \| 0x40, half = r*K/2 x 24 cycles = r x 2.84 µs (182..361 µs, 1.4-2.8 kHz): hiss | ~46 ms |
+| 8 | 1F22 | bl = 128..1, half = round(K*bl/2) x 24 cycles: fast rising sweep 1.4 kHz -> ultrasonic | 23.5 ms |
+| 9 | 1DCD(p) | K' = ceil(K/2); 53 steps of 48 pulses, on for (p+1-c)*K' and off for c*K' passes of 18 cycles, c = 1..26 then 27..1: constant pitch 1/((p+1) x 2.13 µs) with the pulse width swept up and down. p = 0x60+spell: 4.8-3.8 kHz, 0x80: 3.6 kHz, 0xA0: 2.9 kHz, 0xC0: 2.4 kHz, 0xFF: 1.8 kHz | 2544 x (p+1) x 2.13 µs: 0.53 s (0x60) .. 1.39 s (0xFF) |
+| 10 | 1F73(p) | p bursts (0 = 256) of 40 halves; r = (rand & 0x3F) + 0x40 per burst, half = 2*r*K x 18 cycles = r x 8.52 µs: 460-920 Hz noisy chirps | ~33 ms per burst |
+| 11 | 1FA3 | cx = 0x40..0xBF, 20 halves each of cx*K x (NOP/DEC/JNZ, 21 cycles) = cx x 4.97 µs: falling 1570 -> 530 Hz | 1.62 s |
+| 12 | 1FCC | cx = 0xC0 down to 0x41, as 11: rising 525 -> 1550 Hz | 1.64 s |
+
+1000:1ED8 (between 1EB3 and 1EFD) is a 14th routine missing from the table (rising sweep, half = (160..1)*K x
+18 cycles); unused.
+
+### Call sites (98)
+| n | where (1000:xxxx) | what | port |
+|---|---|---|---|
+| 0 | 2B19/2B8C, 2C25/2C8A, 2D44/2DA9, 2E4F/2EC5 (N, S, E, W) | on foot / horseback: once for the command, once more for a step actually taken (not when slowed); the second step of the flag DS:95C6 clicks again | Game.move |
+| 0 | 7AE3 (x2) | combat move: same pattern | combat moveMember |
+| 1 | 29C3 | blocked message (DS:0929) + keyboard flush; from the walk routines, 7AE3, dungeon 891E/895F | Game.blocked (move, sail, dungeon, combat; no flush) |
+| 1 | 11F9, 12D6, 1445, 162F | key prompt out of range, direction prompt with another key, line input full / backspace on empty, Y/N prompt | prompts.ts, Game.askDir |
+| 1 | 75DC | weapon not allowed for the class | actions readyWeapon |
+| 1 | 8D6D | reagent found over 99 (DS:27B5) | items findReagent |
+| 1 | 794D | dungeon room: members must leave by the same exit | not ported (rule missing) |
+| 1 | 44EE | balloon cannot land here | not ported (balloon landing missing) |
+| 1 | 4CC1 | Z)tats: member number out of range | not ported (the Z)tats prompt differs) |
+| 1 | C454 | disk swap prompt, wrong drive | not applicable |
+| 1 | CAF6, CD80 (x2), CEBE, D085, D1D0, D4AE, DD24, DE35, DFAF | shops: negative amounts, item not sold here, wrong key at the buy/sell or tavern menu | shops.ts |
+| 2 | 191E (1A29), 5A6B (5BFC), 84D2 (8562) | bad command (world/town, combat, dungeon) | Game.command, combat playerTurn, dungeon command |
+| 2 | 84D2 (85EF) | dungeon: command not available underground (DS:0606) | dungeon command |
+| 2 | 73C9 | cannons: not a broadside | items fireCannon |
+| 3 | 73C9 | the party's cannon fires | items fireCannon |
+| 3 | 5569 | a pirate ship fires (564B) | not ported (no pirate cannon) |
+| 3 | 978C | a monster's missile, field or spell leaves | combat monsterRanged |
+| 4 | 61D1, 60F1 | the party's attack (melee swing, missile launch) | combat attack |
+| 4 | 5F9D | miss with nothing in the way (param 0): the attack sound again | combat missed() |
+| 5 | 9BE5 | a monster's melee attack | combat monsterMelee |
+| 6 | 6012 | the party hits a creature | combat resolveHit |
+| 6 | 6466, 6BF8 | projectile spell / Tremor hits | magic projectile, Tremor |
+| 6 | 9F7B (x2) | a monster on a damaging field / falling asleep on a sleep field | combat monstersTurn (damaging fields; the port has no sleep-field case) |
+| 6 | 9B03 | Jinx: a monster hits another | not ported (no Jinx in combat) |
+| 6 | 5569, 73C9 | a cannonball hits | items fireCannon (pirates: not ported) |
+| 6 | 1584 | party hazard (bomb trap, falling rocks, pit, fire fields, whirlpool, cannon) | chest bomb (actions, dungeon), dungeon hazard |
+| 6 | 1C53 (x2), 87E2 (x2) | end of turn: poisoned member, starving party | Game.endTurn (also used underground) |
+| 6 | 0501 | candle at the Abyss entrance + shake | items useAbyssItem |
+| 6 | 05CE (x6) | skull: 3 x (sound + shake + flash), both cases | items useSkull |
+| 7 | 09D9 | member hurt: chest traps (7150/70CE), dungeon fields (9209, 919A, 91D1), combat fields | chest traps, dungeon fields, combat terrainEffect |
+| 7 | 96B9, 9764 | a monster's blow or missile hits a member | combat monsterMelee / monsterRanged |
+| 7 | B730 (x3) | orb and fountain damage | dungeon hurt() |
+| 8 | 6399 | spell failed | magic failed() |
+| 8 | 7150 | chest trap evaded | actions openChest, dungeon chestTrap |
+| 8 | 7962 | a member leaves the combat map | combat moveMember |
+| 8 | 9C56 | a monster flees off the map | combat monsterAct |
+| 8 | 9B6B, 9BA6 | food / gold stolen | combat monsterAct |
+| 8 | C51C | no party formed (start-up) | not applicable |
+| 9 (0xA0) | 2A91 | moongate: entering and arriving; the Spirituality gate before the shrine | world/sky checkMoongate |
+| 9 (0x60+spell) | 63B4 | every spell paid, between two screen inverts | magic pay() |
+| 9 (0x80) | 9CBC | Reaper/Balron sleep spell | combat monsterAct |
+| 9 (0xC0) | DA79 | healer: cure, heal, resurrect | shops healer |
+| 9 (0xC0) | E442, E59B, E4C3 | Lord British heals, resurrects, raises a level | talk.ts |
+| 9 (0xFF) | E72C | partial Avatarhood at a shrine | shrine.ts |
+| 10 (MP) | 63B4 | every spell paid: one burst per MP point | magic pay() |
+| 10 (10 / 0x14) | E442 / E59B | Lord British heals / resurrects | talk.ts |
+| 11 | 786F, 7821 | whirlpool takes the party or an object | not ported (no whirlpool) |
+| 12 | 78D1, 7821 | twister hits the party or an object | not ported (no twister) |
+
+TITLE.EXE has its own speaker routines (port 0x61 in its code around 1000:12xx-15xx); not covered here.
+
+### Port (src/audio/speaker.ts)
+- `effectSpans(n, p)` replays each routine as a list of toggle intervals (the model above, unit-tested in
+  tests/speaker.test.ts), `renderSpans` turns it into samples (area-sampled 1-bit wave + DC blocker) and
+  `playEffect(n, p)` plays them through an AudioBufferSourceNode. Effects are queued one after the other and the
+  promise resolves when the effect has played, as the original blocks; callers await it where the original
+  blocks the game; a few synchronous spots (end of turn, reagent overflow) fire and forget.
+- The AudioContext is created on the first user gesture (pointer/key/touch). Without it (tests, node, before
+  any gesture), with the sound off (config `sound.enabled`, toggled by V) and under the test clock (?seed),
+  `playEffect` resolves at once: the original does not wait either when its flag is off, and nothing in the
+  game logic depends on the wait, so the headless scenarios keep their timing.
+- The noise uses a separate seeded stream (`soundRand8` in rng.ts) so that the game rolls do not depend on
+  whether the sound is on.

@@ -14,6 +14,8 @@ export interface Config {
   /** font: "auto" = original 8x8 font for English with the original tiles, the modern font otherwise. */
   display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean };
   controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number };
+  /** PC-speaker effects (src/audio/speaker.ts); volume 0..1. V)olume toggles `enabled` in the game. */
+  sound: { enabled: boolean; volume: number };
   debug: { enabled: boolean; godMode: boolean };
   /** Conversation provider for NPCs (not implemented yet: see src/game/talk/provider.ts). */
   llm: { enabled: boolean; provider: string; model: string; apiKey: string };

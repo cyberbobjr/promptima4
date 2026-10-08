@@ -24,5 +24,6 @@
   "cmd.peer": "Gemme",
   "cmd.newOrder": "Ordre",
   "cmd.fire": "Feu !",
-  "cmd.ignite": "Torche"
+  "cmd.ignite": "Torche",
+  "cmd.volume": "Volume"
 }

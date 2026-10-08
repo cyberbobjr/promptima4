@@ -32,6 +32,7 @@ export interface CombatResult {
 import { rand8 } from "./rng";
 export { rand8 };
 import { sleep } from "./prompts";
+import { playEffect, SFX } from "../audio/speaker";
 
 const WALKABLE = new Set(WALKABLE_TILES);
 
@@ -129,9 +130,10 @@ class Combat {
     return this.party.some((p) => p.present && Math.abs(p.x - m.x) + Math.abs(p.y - m.y) < 5);
   }
 
-  async flash(x: number, y: number, tile: number = T.HIT_FLASH) {
+  /** Shows `tile` on a square for a moment; the effect `sfx` (1000:1D47) plays meanwhile. */
+  async flash(x: number, y: number, tile: number = T.HIT_FLASH, sfx = -1) {
     this.effect = { x, y, tile };
-    await sleep(140);
+    await Promise.all([sleep(140), sfx >= 0 ? playEffect(sfx) : undefined]);
     this.effect = null;
   }
 
@@ -226,13 +228,16 @@ class Combat {
           return;
         }
         case "z": await g.ztatsFor(m.i); continue;
-        default: g.con.print(M.badCommand); continue;
+        case "v": await g.commands.get("v", "combat")!.run({ g, ctx: "combat" }); return; // V)olume, 1000:5BC2
+        default: g.con.print(M.badCommand); await playEffect(SFX.BAD_COMMAND); continue; // 1000:5BF1
       }
     }
   }
 
+  /** 1000:7AE3: a click for the command, another for the step taken. */
   private async moveMember(m: Member, d: Dir) {
     const g = this.g;
+    await playEffect(SFX.STEP);
     g.con.println(DIR_NAMES[d]);
     const [dx, dy] = DIRS[d];
     const nx = m.x + dx, ny = m.y + dy;
@@ -241,6 +246,7 @@ class Combat {
       // In dungeon rooms the edge taken is the way out (orientation 0 W, 1 N, 2 E, 3 S).
       const arena = this.req.arena as CombatMap & { exitDir?: number | null };
       if ("exitDir" in arena) arena.exitDir = { W: 0, N: 1, E: 2, S: 3 }[d];
+      await playEffect(SFX.FLEE); // 1000:7962: every member leaving the field
       if (!this.monstersLeft) { m.present = false; return; }
       g.con.print(M.fleeing);
       if (m.p.hp === m.p.hpMax && this.monsters.some((x) => x.alive && !isNonEvil(x.tile))) {
@@ -250,17 +256,19 @@ class Combat {
       return;
     }
     const t = this.tileAt(nx, ny);
-    if (!WALKABLE.has(t) || this.occupied(nx, ny)) { g.con.print(M.blocked); return; }
+    if (!WALKABLE.has(t) || this.occupied(nx, ny)) { await g.blocked(); return; }
     if (t === T.FIRE_FIELD && rand8() & 1) { g.con.print(M.slowProgress); return; }
     m.x = nx; m.y = ny;
-    this.terrainEffect(m);
+    await playEffect(SFX.STEP);
+    await this.terrainEffect(m);
   }
 
-  private terrainEffect(m: Member) {
+  /** Fields under a member (1000:9209, combat): the member's line flashes with the hurt noise (1000:09D9). */
+  private async terrainEffect(m: Member) {
     const t = this.tileAt(m.x, m.y);
-    if ((t === T.POISON_FIELD || t === T.SWAMP) && m.p.status === "G") { m.p.status = "P"; this.g.con.print(M.poisoned); }
-    else if (t === T.FIRE_FIELD || t === T.LAVA) { this.g.damagePlayer(m.p, 16 + (rand8() % 32)); this.g.con.print(M.burned); }
-    else if (t === T.SLEEP_FIELD && m.p.status === "G") { m.p.status = "S"; this.g.con.print(M.slept); }
+    if ((t === T.POISON_FIELD || t === T.SWAMP) && m.p.status === "G") { m.p.status = "P"; this.g.con.print(M.poisoned); await playEffect(SFX.HURT); }
+    else if (t === T.FIRE_FIELD || t === T.LAVA) { await playEffect(SFX.HURT); this.g.damagePlayer(m.p, 16 + (rand8() % 32)); this.g.con.print(M.burned); }
+    else if (t === T.SLEEP_FIELD && m.p.status === "G") { m.p.status = "S"; this.g.con.print(M.slept); await playEffect(SFX.HURT); }
   }
 
   private async attack(m: Member) {
@@ -270,18 +278,21 @@ class Combat {
     const w = m.p.weapon;
     const weapon = WEAPONS[w];
     const [dx, dy] = DIRS[d];
+    // the swing (1000:61D1) or the miss (1000:5F9D) sounds the attack effect
     // Halberd reaches 2 squares (1000:61D1)
     if (w === 10) {
+      await playEffect(SFX.ATTACK);
       for (let k = 1; k <= 2; k++) {
         const t = this.monsterAt(m.x + dx * k, m.y + dy * k);
         if (t) { await this.resolveHit(m, t); return; }
       }
-      g.con.print(M.missed);
+      await this.missed();
       return;
     }
     const adj = this.monsterAt(m.x + dx, m.y + dy);
     if (!weapon.ranged && !(w === 2 && !adj)) {
-      if (!adj) { g.con.print(M.missed); return; }
+      await playEffect(SFX.ATTACK);
+      if (!adj) { await this.missed(); return; }
       await this.resolveHit(m, adj);
       return;
     }
@@ -300,6 +311,7 @@ class Combat {
       if (g.save.weapons[w] === 0) { m.p.weapon = 0; g.con.print(M.lastOne); }
     }
     const projectile = w === 14 ? T.MAGIC_FLASH : T.MISSILE;
+    await playEffect(SFX.ATTACK); // 1000:60F1
     const hit = await this.shoot(m.x, m.y, d, range, projectile, false);
     if (w === 9) {
       const fx = hit ? hit.x : m.x + dx * range, fy = hit ? hit.y : m.y + dy * range;
@@ -310,6 +322,12 @@ class Combat {
     await this.resolveHit(m, target);
   }
 
+  /** 1000:5F9D(0): nothing in the way of the blow: the attack sound again, then the miss message. */
+  private async missed() {
+    await playEffect(SFX.ATTACK);
+    this.g.con.print(M.missed);
+  }
+
   /** 1000:6012 hit roll and damage; 1000:5DAB damage to monster. */
   private async resolveHit(m: Member, target: Monster) {
     const g = this.g;
@@ -317,7 +335,7 @@ class Combat {
     const inAbyss = g.save.location === 24;
     const hit = !(inAbyss && w <= 10) && (m.p.dex >= 40 || rand8() <= m.p.dex + 128);
     if (!hit) { g.con.print(M.missed); return; }
-    await this.flash(target.x, target.y);
+    await this.flash(target.x, target.y, T.HIT_FLASH, SFX.HIT); // 1000:60CA
     this.damageMonster(target, rand8() % Math.min(255, m.p.str + WEAPONS[w].damage), m);
   }
 
@@ -352,6 +370,7 @@ class Combat {
       // fields under monsters
       const t = this.tileAt(mon.x, mon.y);
       if (t === T.POISON_FIELD || ((t === T.FIRE_FIELD || t === T.LAVA) && !has(mon.info, "fireImmune"))) {
+        await playEffect(SFX.HIT); // 1000:A0F6
         this.damageMonster(mon, rand8() & 0x7f, null);
         if (!mon.alive) continue;
       }
@@ -398,6 +417,7 @@ class Combat {
     // sleep spell (Reaper, Balron)
     if (has(mon.info, "castsSleep") && g.spellEffect !== "N" && rand8() % 4 === 0) {
       g.con.print(M.sleep);
+      await playEffect(SFX.MAGIC, 0x80); // 1000:9D7E, with a screen flash
       for (const m of this.party) if (m.present && m.p.status === "G" && rand8() & 1) m.p.status = "S";
       return;
     }
@@ -417,14 +437,16 @@ class Combat {
         mon.alive = false;
         g.con.print(mon.info.name + M.flees);
         if (isNonEvil(mon.tile)) { g.karmaInc(1, 1); g.karmaInc(3, 1); }
+        await playEffect(SFX.FLEE); // 1000:9C56
         return;
       }
       if (this.canEnter(mon, nx, ny)) { mon.x = nx; mon.y = ny; }
       return;
     }
     if (adjacent) {
-      if (has(mon.info, "stealsFood")) { g.save.food = Math.max(0, g.save.food - 2500); g.con.print(M.foodStolen); }
-      if (has(mon.info, "stealsGold") && rand8() % 4 === 0) { g.save.gold = Math.max(0, g.save.gold - (rand8() & 0x3f)); g.con.print(M.goldStolen); }
+      // thefts sound the flee effect (1000:9B6B, 9BA6)
+      if (has(mon.info, "stealsFood")) { g.save.food = Math.max(0, g.save.food - 2500); g.con.print(M.foodStolen); await playEffect(SFX.FLEE); }
+      if (has(mon.info, "stealsGold") && rand8() % 4 === 0) { g.save.gold = Math.max(0, g.save.gold - (rand8() & 0x3f)); g.con.print(M.goldStolen); await playEffect(SFX.FLEE); }
       await this.monsterMelee(mon, target);
       return;
     }
@@ -442,9 +464,10 @@ class Combat {
   private async monsterMelee(mon: Monster, m: Member) {
     const g = this.g;
     g.con.println(M.attackedBy + mon.info.name); // 1000:5333
+    await playEffect(SFX.MONSTER_ATTACK); // 1000:9C06
     const prot = g.spellEffect === "P" && rand8() & 1;
     if (prot || rand8() <= ARMOURS[m.p.armour].defense) { g.con.print(M.missed); return; }
-    await this.flash(m.x, m.y);
+    await this.flash(m.x, m.y, T.HIT_FLASH, SFX.HURT); // 1000:96B9
     const r = rand8() % Math.max(1, mon.info.maxDamageRoll);
     this.hurtMember(m, (r >> 4) * 10 + (r % 10));
   }
@@ -468,6 +491,7 @@ class Combat {
       missile: T.MISSILE, magic: T.MAGIC_FLASH, fireball: T.HIT_FLASH, boulder: T.ROCKS, randomField: T.POISON_FIELD + (rand8() & 3),
     };
     let tile = tiles[kind];
+    await playEffect(SFX.CANNON); // 1000:97B1
     const hit = await this.shoot(mon.x, mon.y, d, 11, tile, true);
     const m = hit && this.memberAt(hit.x, hit.y);
     if (!m) {
@@ -475,7 +499,7 @@ class Combat {
       return;
     }
     if (kind === "randomField") tile = tiles.randomField;
-    await this.flash(m.x, m.y, tile);
+    await this.flash(m.x, m.y, tile, SFX.HURT); // 1000:9764 / 96B9
     const dmg = () => { const r = rand8() % Math.max(1, mon.info.maxDamageRoll); return (r >> 4) * 10 + (r % 10); };
     switch (tile) {
       case T.POISON_FIELD:

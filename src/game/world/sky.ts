@@ -4,6 +4,7 @@ import { MOON_RULES, MOONGATES, WIND_RULES } from "../../data/tables";
 import { rand8 } from "../rng";
 import { T } from "../tiles";
 import type { Game } from "../game";
+import { playEffect, SFX } from "../../audio/speaker";
 
 export class Sky {
   private moonSub = 0;
@@ -41,8 +42,10 @@ export class Sky {
 }
 
 /** Stepping into the open gate sends the party to the gate of Felucca's phase (1000:2A91). */
-export function checkMoongate(g: Game) {
+export async function checkMoongate(g: Game) {
   if (g.map.kind !== "world" || g.sky.moongateTile(g.save, g.px, g.py) !== T.MOONGATE3) return;
+  // the screen flashes with the magic sound (pulse width 0xA0) as the party steps in, and again at arrival
+  await playEffect(SFX.MAGIC, 0xa0);
   if (g.save.trammelPhase === 4 && g.save.feluccaPhase === 4) {
     // both moons full: the gate leads to the Shrine of Spirituality (1000:2A91)
     g.pendingShrine = 6;
@@ -50,4 +53,5 @@ export function checkMoongate(g: Game) {
   }
   const dest = MOONGATES[g.save.feluccaPhase];
   g.setPos(dest.x, dest.y);
+  await playEffect(SFX.MAGIC, 0xa0);
 }

@@ -14,6 +14,7 @@ import { rand, rand8 } from "./rng";
 import { T } from "./tiles";
 import { encodeObjects } from "./world/objects";
 import { worldFight, worldMonsterAt } from "./world/monsters";
+import { playEffect, SFX, toggleSound } from "../audio/speaker";
 
 export async function attack(g: Game) {
   g.con.print(MSG_CORE.attack);
@@ -77,7 +78,10 @@ export async function readyWeapon(g: Game, member?: number) {
   g.con.println(WEAPONS[w].name);
   const r = equipWeapon(g.save, p, w);
   if (r === "noneLeft") g.con.print(MSG_CORE.noneLeft);
-  else if (r === "notAllowed") g.con.print(MSG_CORE.mayNotUseA + CLASS_NAMES[p.klass] + MSG_CORE.mayNotUse + WEAPONS[w].name + "!\n");
+  else if (r === "notAllowed") {
+    g.con.print(MSG_CORE.mayNotUseA + CLASS_NAMES[p.klass] + MSG_CORE.mayNotUse + WEAPONS[w].name + "!\n");
+    await playEffect(SFX.ERROR); // 1000:75DC
+  }
 }
 
 /** W)ear armour (1000:7732). */
@@ -151,15 +155,27 @@ export async function openChest(g: Game, who: number) {
     const kind = r1 & 3 & rand8();
     g.con.print(CHEST_TRAPS.types[kind] + MSG_CORE.trap);
     const p = who >= 0 ? g.save.players[who] : null;
-    if (!p || rand8() % 100 <= p.dex + 25) g.con.print(MSG_CORE.evaded);
-    else if (kind === 0) g.damagePlayer(p, rand8() % 30);
-    else if (kind === 1) p.status = "S";
-    else if (kind === 2) p.status = "P";
-    else for (const m of g.members) if (m.status !== "D" && rand8() & 1) g.damagePlayer(m, 10 + (rand8() % 15));
+    if (!p || rand8() % 100 <= p.dex + 25) { g.con.print(MSG_CORE.evaded); await playEffect(SFX.FLEE); }
+    else if (kind === 3) { // bomb: the whole party (1000:1584)
+      await playEffect(SFX.HIT);
+      for (const m of g.members) if (m.status !== "D" && rand8() & 1) g.damagePlayer(m, 10 + (rand8() % 15));
+    } else {
+      // acid, sleep, poison: the member's line flashes with the hurt noise (1000:09D9)
+      if (kind === 1) p.status = "S";
+      else if (kind === 2) p.status = "P";
+      await playEffect(SFX.HURT);
+      if (kind === 0) g.damagePlayer(p, rand8() % 30);
+    }
   }
   const gold = (rand8() % 80) + (rand8() & 7) + 10;
   g.con.print(MSG_CORE.chestHolds + gold + MSG_CORE.gold);
   g.save.gold = Math.min(9999, g.save.gold + gold);
+}
+
+/** V)olume (1000:70AD): sound on or off. */
+export async function volume(g: Game) {
+  await say(g, MSG_CORE.volume);
+  await say(g, toggleSound() ? MSG_CORE.volumeOn : MSG_CORE.volumeOff);
 }
 
 export function locate(g: Game) {

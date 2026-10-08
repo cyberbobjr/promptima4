@@ -77,6 +77,13 @@ export function createSettingsPanel(g: Game): Panel {
             dispatchEvent(new Event("resize")); // the shell re-reads the setting on resize
           })),
           row("set-tap", t("settings.tapToMove"), check("set-tap", c.controls.tapToMove, (v) => save({ controls: { tapToMove: v } })))),
+        section(t("settings.sound"),
+          row("set-sound", t("settings.soundEnabled"), check("set-sound", c.sound.enabled, (v) => save({ sound: { enabled: v } })), t("settings.soundHint")),
+          row("set-volume", t("settings.volume"), h("input", {
+            id: "set-volume", type: "range", class: "set-range", min: "0", max: "100", step: "5",
+            value: String(Math.round(c.sound.volume * 100)), disabled: !c.sound.enabled,
+            onchange: (e) => save({ sound: { volume: Number((e.target as HTMLInputElement).value) / 100 } }),
+          }))),
         section(t("settings.debug"),
           row("set-debug", t("settings.debugMode"), check("set-debug", c.debug.enabled, (v) => save({ debug: { enabled: v } })), t("settings.debugHint"))),
         section(t("settings.llm"),

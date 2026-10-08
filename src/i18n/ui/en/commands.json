@@ -24,5 +24,6 @@
   "cmd.peer": "Peer (gem)",
   "cmd.newOrder": "New order",
   "cmd.fire": "Fire",
-  "cmd.ignite": "Ignite torch"
+  "cmd.ignite": "Ignite torch",
+  "cmd.volume": "Volume"
 }

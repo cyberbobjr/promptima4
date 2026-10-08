@@ -37,7 +37,7 @@ export function yell(g: Game) {
   g.con.print(MSG_CORE.giddyup);
 }
 
-export function sail(g: Game, dir: Dir) {
+export async function sail(g: Game, dir: Dir) {
   const shipTile = { W: T.SHIP_W, N: T.SHIP_N, E: T.SHIP_E, S: T.SHIP_S }[dir];
   if (g.save.transport !== shipTile) {
     g.save.transport = shipTile;
@@ -48,7 +48,7 @@ export function sail(g: Game, dir: Dir) {
   const [dx, dy] = DIRS[dir];
   const t = tileAt(g.map, g.px + dx, g.py + dy);
   g.con.print({ W: MSG_CORE.sailWest, N: MSG_CORE.sailNorth, E: MSG_CORE.sailEast, S: MSG_CORE.sailSouth }[dir]);
-  if (!(tileFlags(t) & Walk.Ship) || worldMonsterAt(g, g.px + dx, g.py + dy)) { g.con.print(MSG_CORE.blocked); g.endTurn(); return; }
+  if (!(tileFlags(t) & Walk.Ship) || worldMonsterAt(g, g.px + dx, g.py + dy)) { await g.blocked(); g.endTurn(); return; }
   // Wind (1000:2A5A): into the wind only 1 turn in 4, with the wind 3 in 4.
   const d = { W: 0, N: 1, E: 2, S: 3 }[dir];
   const T4 = g.save.moves & 3;

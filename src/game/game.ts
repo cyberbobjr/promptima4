@@ -17,7 +17,7 @@ import { runCombat, type CombatRequest, type CombatResult } from "./combat";
 import { HORN_EFFECT } from "./items";
 import { LayerStack } from "../ui/layers";
 import { drawStatus } from "../ui/statusPanel";
-import { CommandRegistry, type Command, type CommandContext } from "./commands";
+import { CommandRegistry, endsTurn, type Command, type CommandContext } from "./commands";
 import { meditateAt } from "./shrine";
 import { adjustKarma, karmaDec, karmaInc } from "./karma";
 import { askMember } from "./prompts";
@@ -31,7 +31,8 @@ import { decodeObjects, type WorldObject } from "./world/objects";
 import { moveWorldMonsters, partyDeath, worldFight } from "./world/monsters";
 import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
-import { attack, getChest, holeUp, locate, openChest, quitSave, readyWeapon, wearArmour, ztats, ztatsFor } from "./actions";
+import { attack, getChest, holeUp, locate, openChest, quitSave, readyWeapon, volume, wearArmour, ztats, ztatsFor } from "./actions";
+import { playEffect, SFX } from "../audio/speaker";
 
 export const CLASS_NAMES = CLASSES;
 
@@ -115,6 +116,8 @@ export class Game {
       cmd("q", "quitSave", all, quitSave),
       cmd("r", "ready", all, (g) => readyWeapon(g)),
       cmd("t", "talk", out, talk),
+      // V)olume (1000:70AD) in every dispatch (1000:1AD4, combat 5BC2, dungeon 85D9); the turn goes by
+      { key: "v", id: "volume", contexts: ["world", "town", "dungeon", "combat"], run: async (env) => { await volume(env.g); endsTurn(env); } },
       cmd("w", "wear", all, wearArmour),
       cmd("x", "exit", out, exitTransport),
       cmd("y", "yell", out, yell),
@@ -200,7 +203,7 @@ export class Game {
     const ctx = this.context;
     const c = this.commands.get(k.key, ctx);
     if (c) await c.run({ g: this, ctx });
-    else this.con.print(MSG_CORE.badCommand);
+    else { this.con.print(MSG_CORE.badCommand); await playEffect(SFX.BAD_COMMAND); } // 1000:1A1E
   }
 
   // ---------------------------------------------------------------- prompts
@@ -213,6 +216,7 @@ export class Game {
       const d = Input.direction(k);
       if (d) { this.con.println(DIR_NAMES[d]); return d; }
       if (k.key === "Escape" || k.key === "Enter" || k.key === " ") { this.con.println(""); return null; }
+      await playEffect(SFX.ERROR); // 1000:12D6: any other key
     }
   }
 
@@ -252,9 +256,10 @@ export class Game {
       s.food = 0;
       this.con.print(MSG_CORE.starving);
       for (const p of this.members) if (p.status !== "D") this.damagePlayer(p, 2);
+      void playEffect(SFX.HIT); // the whole party flashes (1000:1C53)
     }
     for (const p of this.members) {
-      if (p.status === "P") this.damagePlayer(p, 2);
+      if (p.status === "P") { this.damagePlayer(p, 2); void playEffect(SFX.HIT); }
       else if (p.status === "S" && rand(8) === 0) p.status = "G";
       // MP regen +1 up to the class maximum (1000:13B6)
       if (p.status !== "D") p.mp = Math.min(maxMp(p), p.mp + 1);
@@ -305,31 +310,40 @@ export class Game {
 
   async move(dir: Dir) {
     const [dx, dy] = DIRS[dir];
-    if (this.onShip) { sail(this, dir); return; }
+    if (this.onShip) { await sail(this, dir); return; }
     if (this.inBalloon) { this.con.print(MSG_CORE.driftOnly); return; }
     if (this.onHorse) this.save.transport = dx < 0 ? T.HORSE_W : dx > 0 ? T.HORSE_E : this.save.transport;
+    // on foot or horseback: a click for the command, another for the step taken (1000:2B8C, 2B19)
+    await playEffect(SFX.STEP);
     this.con.println(DIR_NAMES[dir]);
     const nx = this.px + dx, ny = this.py + dy;
     if (this.map.kind === "town" && (nx < 0 || ny < 0 || nx >= 32 || ny >= 32)) {
+      await playEffect(SFX.STEP);
       await leaveTown(this);
       this.endTurn();
       return;
     }
     const t = tileAt(this.map, nx, ny);
     const need = this.onHorse ? Walk.Horse : Walk.Foot;
-    if (!(tileFlags(t) & need) || this.npcAt(nx, ny)) { this.con.print(MSG_CORE.blocked); this.endTurn(); return; }
-    if (this.map.kind === "world" && this.onFoot && this.objects.some((o) => o.x === (nx & 255) && o.y === (ny & 255) && o.tile >= 0x80)) {
-      this.con.print(MSG_CORE.blocked); this.endTurn(); return;
-    }
+    const blocked = !(tileFlags(t) & need) || !!this.npcAt(nx, ny) ||
+      (this.map.kind === "world" && this.onFoot && this.objects.some((o) => o.x === (nx & 255) && o.y === (ny & 255) && o.tile >= 0x80));
+    if (blocked) { await this.blocked(); this.endTurn(); return; }
     if (rand(1000) < slowChance(t) * 1000) { this.con.print(MSG_CORE.slowProgress); this.endTurn(); return; }
+    await playEffect(SFX.STEP);
     this.setPos(nx, ny);
     this.endTurn();
-    checkMoongate(this);
+    await checkMoongate(this);
     // 1000:27D9: walking south into the approach of the Shrine of Humility summons daemons, unless the horn was blown
     if (this.map.kind === "world" && dir === "S" && this.px >= 229 && this.px <= 233 && this.py >= 212 && this.py <= 216 &&
         this.spellEffect !== HORN_EFFECT && !this.pendingAttack) {
       this.pendingAttack = { tile: 0xf0, x: this.px, y: this.py + 1 };
     }
+  }
+
+  /** 1000:29C3: the blocked message (DS:0929) and the error buzz (the original also flushes the keyboard there). */
+  async blocked() {
+    this.con.print(MSG_CORE.blocked);
+    await playEffect(SFX.ERROR);
   }
 
   setPos(x: number, y: number) {

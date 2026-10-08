@@ -16,6 +16,7 @@ import { loadConfig } from "./config/config";
 import { createShell } from "./ui/dom/shell";
 import { installPanels } from "./ui/panels";
 import { installPointer } from "./ui/dom/pointer";
+import * as speaker from "./audio/speaker";
 import "./pwa";
 
 async function main() {
@@ -34,12 +35,14 @@ async function main() {
     document.fonts.add(await face.load());
   }
   renderer.setFont(font);
+  speaker.initSpeaker(); // the AudioContext starts on the first user gesture
   const game = new Game(renderer, new Input());
   const shell = createShell(canvas, game);
   installPanels(shell, game);
   installPointer(shell, game);
   renderer.resize();
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game; // used by automated tests
+  if (import.meta.env.DEV) (window as unknown as { __speaker: typeof speaker }).__speaker = speaker;
   installMagic(game);
   installItems(game);
 

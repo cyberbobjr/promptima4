@@ -6,6 +6,7 @@ import { VIRTUES } from "./locations";
 import { addDrawHook, blankView, loadPicture, PixelLayer, showTiles } from "./endgame/ui";
 import { askKey, flushKeys, sameText, ticks } from "./prompts";
 import { MSG_MAGIC as M } from "./texts/magic";
+import { playEffect, SFX } from "../audio/speaker";
 
 const SPIRITUALITY = 6;
 
@@ -46,6 +47,7 @@ async function meditate(g: Game, virtue: number) {
     }
     if (cycles === MEDITATION.maxCycles && s.karma[virtue] === MEDITATION.elevationKarma) {
       say(M.partialAvatarhood + VIRTUES[virtue]);
+      await playEffect(SFX.MAGIC, 0xff); // between two screen flashes (1000:E907)
       g.con.println("");
       s.karma[virtue] = 0;
       flushKeys(g);

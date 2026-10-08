@@ -13,6 +13,7 @@ import { runShop } from "./shops";
 import { karmaDec, karmaInc, markVirtue, virtueReady, Virtue } from "./karma";
 import { TOPICS, type ConversationTurn } from "./conversation/provider";
 import { conversationProvider } from "./conversation/llm";
+import { playEffect, SFX } from "../audio/speaker";
 
 const base = (tile: number) => tile & ~1;
 
@@ -180,6 +181,9 @@ async function lordBritish(g: Game) {
   if (s.players[0].status === "D") {
     s.players[0].status = "G";
     await say(g, me, LB.liveAgain);
+    // noise bursts, then the magic sound between two screen flashes (1000:E600)
+    await playEffect(SFX.CAST, 0x14);
+    await playEffect(SFX.MAGIC, 0xc0);
     healAll(g);
   }
   await say(g, LB.welcome, me);
@@ -222,7 +226,12 @@ async function lbHealth(g: Game) {
   await say(g, LB.health);
   const c = await askYN(g);
   if (c === "Y") await say(g, LB.good);
-  else if (c === "N") { await say(g, LB.heal); healAll(g); }
+  else if (c === "N") {
+    await say(g, LB.heal);
+    await playEffect(SFX.CAST, 10); // 1000:E474
+    await playEffect(SFX.MAGIC, 0xc0);
+    healAll(g);
+  }
 }
 
 /** 1000:E4C3: level = 1 + number of doublings of 100 reached by XP; raises max HP and stats. */
@@ -241,6 +250,7 @@ async function levelUp(g: Game) {
       await say(g, p.name, LB.level);
       putNum(g, Math.floor(target / 100));
       nl(g);
+      await playEffect(SFX.MAGIC, 0xc0); // with a screen flash (1000:E575)
     }
   }
   await say(g, LB.ask);

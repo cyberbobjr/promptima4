@@ -119,4 +119,9 @@ export const MSG_CORE = defineTexts("msg.core", {
   youHear: 0x0548,
   feelMotion: 0x0553,
   lordBritishRevives: 0x0584,
+
+  // V)olume (1000:70AD): the first text, then the on or off ending
+  volume: 0x222e,
+  volumeOn: 0x2237,
+  volumeOff: 0x223b,
 });

@@ -16,6 +16,7 @@ import { addXp } from "./party";
 import { addDungeonLight } from "./magic";
 import { endsTurn, type UseEnv } from "./commands";
 import { runCodex } from "./endgame/codex";
+import { playEffect, SFX } from "../audio/speaker";
 
 /** Combat context of the U)se command being run (see UseEnv), or the defaults outside combat. */
 const NO_USE = { pos: null, altar: -1, room: false, killAll: null } as const;
@@ -175,10 +176,10 @@ async function useSkull(g: Game) {
     say(g, M.skullCast);
     s.items |= 2;
     for (let v = 0; v < 8; v++) g.karmaInc(v, 10);
-    for (let k = 0; k < 3; k++) await shake(g);
+    for (let k = 0; k < 3; k++) { await playEffect(SFX.HIT); await shake(g); }
   } else {
     say(g, M.skullAloft);
-    for (let k = 0; k < 3; k++) await shake(g);
+    for (let k = 0; k < 3; k++) { await playEffect(SFX.HIT); await shake(g); }
     // every creature on the map dies except Lord British (monster slots 0..7 outdoors, all 32 slots in towns)
     const mode = gameMode(g);
     if (mode < 4) {
@@ -201,7 +202,7 @@ async function useAbyssItem(g: Game, have: number, needs: number, sets: number, 
   if (atAbyss(g) && (needs === 0 || s.items & needs)) {
     s.items |= sets;
     say(g, msg);
-    if (sets === 0x400) await shake(g);
+    if (sets === 0x400) { await playEffect(SFX.HIT); await shake(g); } // the candle: the earth trembles (1000:0501)
     return;
   }
   say(g, M.noEffect);
@@ -260,7 +261,7 @@ function findReagent(g: Game, i: number, name: string) {
   found(g);
   say(g, name);
   s.reagents[i] += (rand8() & 7) + 2;
-  if (s.reagents[i] > 99) { s.reagents[i] = 99; say(g, M.droppedSome); }
+  if (s.reagents[i] > 99) { s.reagents[i] = 99; say(g, M.droppedSome); void playEffect(SFX.ERROR); }
 }
 
 /** Quest item flag in save.items: bit set -> already found. */
@@ -372,7 +373,8 @@ async function fireCannon(g: Game) {
   if (!d) return;
   const [dx, dy] = DIRS[d], tr = g.save.transport;
   const broadside = dx === 0 ? tr === T.SHIP_W || tr === T.SHIP_E : tr === T.SHIP_N || tr === T.SHIP_S;
-  if (!broadside) { say(g, M.broadsides); return; }
+  if (!broadside) { say(g, M.broadsides); await playEffect(SFX.BAD_COMMAND); return; }
+  await playEffect(SFX.CANNON);
   let shot: { t: number; vx: number; vy: number } | null = null;
   const restore = addDrawHook(g, (r) => { if (shot) drawViewTile(r, shot.t, shot.vx, shot.vy); });
   try {
@@ -388,7 +390,7 @@ async function fireCannon(g: Game) {
     shot = null;
     if (!hit) return;
     shot = { t: T.HIT_FLASH, vx: 5 + dx * hit.k, vy: 5 + dy * hit.k };
-    await sleep(150);
+    await Promise.all([sleep(150), playEffect(SFX.HIT)]);
     shot = null;
     const o = hit.o;
     if (o.tile >= 0x80 && rand8() & 3) return;

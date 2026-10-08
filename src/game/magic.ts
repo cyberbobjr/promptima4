@@ -14,6 +14,7 @@ import { askKey, askMember as askPlayer } from "./prompts";
 import { canAct, isAlive } from "./party";
 import { peerAtMap } from "./items";
 import { MSG_MAGIC as M } from "./texts/magic";
+import { playEffect, SFX } from "../audio/speaker";
 
 /**
  * Hooks filled by dungeon.ts while the party is underground (the level data lives in the dungeon module).
@@ -46,19 +47,29 @@ const ABYSS = 24;
 
 interface Ctx { g: Game; who: number; spell: number; api: CombatApi | null; mode: number; }
 
-const failed = (g: Game) => g.con.print(M.failed); // 1000:6399
+/** 1000:6399: the failure message and the flee sound. */
+async function failed(g: Game) {
+  g.con.print(M.failed);
+  await playEffect(SFX.FLEE);
+}
 
-/** 1000:63B4: MP are paid, then Negate makes the spell fail. */
-function pay(c: Ctx): boolean {
+/**
+ * 1000:63B4: MP are paid; noise bursts as many as the MP, then the magic sound (pulse width 0x60 + spell)
+ * between two screen flashes; then Negate makes the spell fail.
+ */
+async function pay(c: Ctx): Promise<boolean> {
   const p = c.g.save.players[c.who];
-  p.mp = Math.max(0, p.mp - SPELLS[c.spell].mp);
-  if (c.g.spellEffect === "N") { failed(c.g); return false; }
+  const mp = SPELLS[c.spell].mp;
+  p.mp = Math.max(0, p.mp - mp);
+  await playEffect(SFX.CAST, mp);
+  await playEffect(SFX.MAGIC, 0x60 + c.spell);
+  if (c.g.spellEffect === "N") { await failed(c.g); return false; }
   return true;
 }
 
-function outdoorsOnly(c: Ctx) { if (c.mode === 1) return true; c.g.con.print(M.outdoorsOnly); failed(c.g); return false; }
-function combatOnly(c: Ctx) { if (c.mode > 3) return true; c.g.con.print(M.combatOnly); failed(c.g); return false; }
-function dungeonOnly(c: Ctx) { if (c.mode === 3) return true; c.g.con.print(M.dungeonOnly); failed(c.g); return false; }
+async function outdoorsOnly(c: Ctx) { if (c.mode === 1) return true; c.g.con.print(M.outdoorsOnly); await failed(c.g); return false; }
+async function combatOnly(c: Ctx) { if (c.mode > 3) return true; c.g.con.print(M.combatOnly); await failed(c.g); return false; }
+async function dungeonOnly(c: Ctx) { if (c.mode === 3) return true; c.g.con.print(M.dungeonOnly); await failed(c.g); return false; }
 
 /** Square in front of the party underground. */
 function ahead(g: Game): [number, number] {
@@ -68,24 +79,24 @@ function ahead(g: Game): [number, number] {
 
 /** Projectile spells 1000:6466: Magic Missile 'M', Iceball 'N', Fireball 'O', Kill 0x8C. */
 async function projectile(c: Ctx, kind: number) {
-  if (!combatOnly(c)) return;
+  if (!(await combatOnly(c))) return;
   const d = await c.g.askDir(M.dirProjectile);
-  if (!d || !pay(c)) return;
+  if (!d || !(await pay(c))) return;
   const hit = await c.api!.shoot(d, kind);
-  if (!hit) { failed(c.g); return; }
+  if (!hit) { await failed(c.g); return; }
   const r = rand8();
   const dmg = kind === T.MISSILE ? (r % 0x40) | 0x10 : kind === T.MAGIC_FLASH ? (r % 0xe0) | 0x20 : kind === T.HIT_FLASH ? (r % 0x80) | 0x18 : 0xe8;
-  await c.api!.flash(hit.x, hit.y);
+  await Promise.all([c.api!.flash(hit.x, hit.y), playEffect(SFX.HIT)]); // 1000:64E7
   c.api!.damageAt(hit.x, hit.y, dmg);
 }
 
 /** Effect char spells (Jinx, Negate, Protection, Quickness): 10 turns (DS:95A4 / DS:946E). */
-function effect(c: Ctx, ch: string) { if (pay(c)) c.g.setSpellEffect(ch, 10); }
+async function effect(c: Ctx, ch: string) { if (await pay(c)) c.g.setSpellEffect(ch, 10); }
 
 async function statusSpell(c: Ctx, prompt: string, apply: (p: Ctx) => boolean) {
   const who = await askPlayer(c.g, prompt);
-  if (who < 0 || !pay(c)) return;
-  if (!apply({ ...c, who })) failed(c.g);
+  if (who < 0 || !(await pay(c))) return;
+  if (!apply({ ...c, who })) await failed(c.g);
 }
 
 /**
@@ -136,9 +147,9 @@ function trackWindow(g: Game) {
 async function blink(c: Ctx) {
   const g = c.g, s = g.save, tr = s.transport || T.AVATAR;
   if (tr > 0x13 && tr !== T.BALLOON) {
-    if (!outdoorsOnly(c)) return;
+    if (!(await outdoorsOnly(c))) return;
     const d = await g.askDir(M.dirBlink);
-    if (!d || !pay(c)) return;
+    if (!d || !(await pay(c))) return;
     if ((s.x & s.y) < 0xc0) {
       const [dx, dy] = DIRS[d];
       const { wx, wy } = worldWindow(g); // party position inside the window
@@ -148,19 +159,19 @@ async function blink(c: Ctx) {
       if (lx !== wx || ly !== wy) { g.setPos(s.x + lx - wx, s.y + ly - wy); rebuildWindow(g); return; }
     }
   }
-  failed(g);
+  await failed(g);
 }
 
 /** Dispell 1000:66DA */
 async function dispell(c: Ctx) {
   const g = c.g, s = g.save;
   if (c.mode === 3) {
-    if (!pay(c)) return;
+    if (!(await pay(c))) return;
     const [x, y] = ahead(g), h = g.dungeon;
     if (h.cell && h.setCell && (h.cell(x, y, s.dngLevel) & 0xf0) === 0xa0) { h.setCell(x, y, s.dngLevel, 0); h.refresh?.(); return; }
   } else if (c.mode > 2 || !(g.inBalloon && s.balloonState !== 0)) {
     const d = await g.askDir(M.dirDispell);
-    if (!d || !pay(c)) return;
+    if (!d || !(await pay(c))) return;
     const [dx, dy] = DIRS[d];
     if (c.mode < 4) {
       const x = g.px + dx, y = g.py + dy;
@@ -181,7 +192,7 @@ async function dispell(c: Ctx) {
       }
     }
   }
-  failed(g);
+  await failed(g);
 }
 
 /** Energy field 1000:6882: F)ire, L)ightning, P)oison, S)leep. */
@@ -193,10 +204,10 @@ async function energy(c: Ctx) {
   if (field >= 0) {
     g.con.println(k);
     if (c.mode === 3) {
-      if (!pay(c)) return;
+      if (!(await pay(c))) return;
       const [x, y] = ahead(g), h = g.dungeon;
       if (h.cell && h.setCell) {
-        if (h.cell(x, y, s.dngLevel) !== 0) failed(g);
+        if (h.cell(x, y, s.dngLevel) !== 0) await failed(g);
         h.setCell(x, y, s.dngLevel, 0xa0 | (field & 3)); // written even after "Failed!" (original behaviour)
         h.refresh?.();
       }
@@ -204,22 +215,22 @@ async function energy(c: Ctx) {
     }
     if (c.mode > 3) {
       const d = await g.askDir(M.dirEnergy);
-      if (!d || !pay(c)) return;
+      if (!d || !(await pay(c))) return;
       const api = c.api!, [dx, dy] = DIRS[d], x = api.casterPos.x + dx, y = api.casterPos.y + dy;
       // only the terrain is tested (list DS:0904, 1000:2999): the field is also laid under a creature
       if (x >= 0 && y >= 0 && x < 11 && y < 11 && WALKABLE.has(api.tileAt(x, y))) { api.setTile(x, y, field); return; }
     }
   }
-  failed(g);
+  await failed(g);
 }
 
 /** Gate 1000:69E5: "To Phase:" 1..8 -> moongate coordinates DS:0814/081C. */
 async function gate(c: Ctx) {
   const g = c.g, tr = g.save.transport || T.AVATAR;
-  if (tr < 0x14 || tr === T.BALLOON) { failed(g); return; }
-  if (!outdoorsOnly(c)) return;
+  if (tr < 0x14 || tr === T.BALLOON) { await failed(g); return; }
+  if (!(await outdoorsOnly(c))) return;
   const k = await askKey(g, M.toPhase, "0", "8");
-  if (k < 0 || k === 0x30 || !pay(c)) return;
+  if (k < 0 || k === 0x30 || !(await pay(c))) return;
   const dest = GATE_DESTINATIONS[k - 0x31];
   g.setPos(dest.x, dest.y);
   rebuildWindow(g);
@@ -228,8 +239,8 @@ async function gate(c: Ctx) {
 /** Open 1000:6B02: chest under the party (never trapped outside combat), or under the caster in combat. */
 async function open(c: Ctx) {
   const g = c.g;
-  if (!pay(c)) return;
-  if (c.mode === 1 && g.inBalloon) { failed(g); return; }
+  if (!(await pay(c))) return;
+  if (c.mode === 1 && g.inBalloon) { await failed(g); return; }
   if (c.mode === 3) {
     const h = g.dungeon, s = g.save;
     if (h.cell && h.setCell && h.cell(s.x, s.y, s.dngLevel) === 0x40) {
@@ -262,9 +273,9 @@ async function open(c: Ctx) {
 }
 
 /** Y-up 1000:6D3D / Z-down 1000:6DC1: random empty square of the new level (32 tries). */
-function changeLevel(c: Ctx, delta: number) {
+async function changeLevel(c: Ctx, delta: number) {
   const g = c.g, s = g.save, h = g.dungeon;
-  if (!dungeonOnly(c) || !pay(c)) return;
+  if (!(await dungeonOnly(c)) || !(await pay(c))) return;
   if (s.location !== ABYSS && !(delta > 0 && s.dngLevel === 7)) {
     const level = s.dngLevel + delta;
     if (level < 0) { h.exit?.(); return; }
@@ -275,12 +286,12 @@ function changeLevel(c: Ctx, delta: number) {
       }
     }
   }
-  failed(g);
+  await failed(g);
 }
 
 /** View 1000:6CB2 -> peer 1000:C403 (town/world overview, or the dungeon level). */
 async function view(c: Ctx) {
-  if (!pay(c)) return;
+  if (!(await pay(c))) return;
   if (c.g.save.location < 0x11) await peerAtMap(c.g);
   else await c.g.dungeon.peer?.();
 }
@@ -307,7 +318,7 @@ const HANDLERS: ((c: Ctx) => Promise<void> | void)[] = [
   (c) => effect(c, "J"), // J Jinx
   (c) => projectile(c, 0x8c), // K Kill
   // L Light 1000:6AB7
-  (c) => { if (dungeonOnly(c) && pay(c)) addDungeonLight(c.g, 100); },
+  async (c) => { if ((await dungeonOnly(c)) && (await pay(c))) addDungeonLight(c.g, 100); },
   (c) => projectile(c, T.MISSILE), // M Magic missile 'M'
   (c) => effect(c, "N"), // N Negate
   open, // O
@@ -317,42 +328,42 @@ const HANDLERS: ((c: Ctx) => Promise<void> | void)[] = [
   async (c) => {
     if (c.mode < 4) {
       const who = await askPlayer(c.g, M.whoResurrect);
-      if (who < 0 || !pay(c)) return;
+      if (who < 0 || !(await pay(c))) return;
       const p = c.g.save.players[who];
       if (p.status === "D") { p.status = "G"; return; }
     }
-    failed(c.g);
+    await failed(c.g);
   },
   // S Sleep 1000:6BAE: not undead nor Balron; asleep if rand8 > HP
-  (c) => {
-    if (!combatOnly(c) || !pay(c)) return;
+  async (c) => {
+    if (!(await combatOnly(c)) || !(await pay(c))) return;
     for (const m of c.api!.monsters()) if (!isUndead(m.tile) && (m.tile & ~3) !== 0xfc && (m.hp & 0xff) < rand8()) c.api!.sleepAt(m.x, m.y);
   },
   // T Tremor 1000:6BF8
   async (c) => {
-    if (!combatOnly(c) || !pay(c)) return;
+    if (!(await combatOnly(c)) || !(await pay(c))) return;
     await shake(c.g);
     for (const m of c.api!.monsters().reverse()) {
       if (m.hp >= 0xc0) continue;
-      if ((rand8() & 1) === 0) { await c.api!.flash(m.x, m.y, T.HIT_FLASH); c.api!.damageAt(m.x, m.y, 0xff); }
+      if ((rand8() & 1) === 0) { await Promise.all([c.api!.flash(m.x, m.y, T.HIT_FLASH), playEffect(SFX.HIT)]); c.api!.damageAt(m.x, m.y, 0xff); } // 1000:6C51
       else if (rand8() & 1) c.api!.setHpAt(m.x, m.y, 0x17);
     }
   },
   // U Undead 1000:6C71
-  (c) => {
-    if (!combatOnly(c) || !pay(c)) return;
+  async (c) => {
+    if (!(await combatOnly(c)) || !(await pay(c))) return;
     for (const m of c.api!.monsters().reverse()) if (m.undead && rand8() & 1 && m.hp > 0x17) c.api!.setHpAt(m.x, m.y, 0x17);
   },
   view, // V
   // W Winds 1000:6CC3: the wind comes from the given direction (DS:96F2: 0 W, 1 N, 2 E, 3 S)
   async (c) => {
-    if (!outdoorsOnly(c)) return;
+    if (!(await outdoorsOnly(c))) return;
     const d = await c.g.askDir(M.fromDir);
-    if (!d || !pay(c)) return;
+    if (!d || !(await pay(c))) return;
     c.g.sky.wind = ({ W: 0, N: 1, E: 2, S: 3 } as Record<Dir, number>)[d];
   },
   // X X-it 1000:6D22: level = 0xFFFF -> back to the surface
-  (c) => { if (dungeonOnly(c) && pay(c)) c.g.dungeon.exit?.(); },
+  async (c) => { if ((await dungeonOnly(c)) && (await pay(c))) c.g.dungeon.exit?.(); },
   (c) => changeLevel(c, -1), // Y
   (c) => changeLevel(c, 1), // Z
 ];
@@ -407,7 +418,7 @@ async function cast(g: Game, api: CombatApi | null) {
   g.con.print(SPELLS[spell].name + M.spellBang);
   if (s.mixtures[spell] === 0) { g.con.print(M.noneLeft); return; }
   s.mixtures[spell]--; // consumed before the MP check
-  if (s.players[who].mp < SPELLS[spell].mp) { g.con.print(M.mpTooLow); failed(g); return; }
+  if (s.players[who].mp < SPELLS[spell].mp) { g.con.print(M.mpTooLow); await failed(g); return; }
   await HANDLERS[spell]({ g, who, spell, api, mode });
 }
 

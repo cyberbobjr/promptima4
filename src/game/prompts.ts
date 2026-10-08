@@ -5,6 +5,7 @@
 import type { Game } from "./game";
 import { CON_W } from "./console";
 import { MSG_CORE } from "./texts/core";
+import { playEffect, SFX } from "../audio/speaker";
 
 /** Current column in the message area. */
 function col(g: Game): number {
@@ -102,8 +103,8 @@ export async function waitKey(g: Game, flush = false): Promise<string> {
   return g.getKey();
 }
 
-/** Error beep 1000:1D47(1). */
-function beep() { /* sound not implemented */ }
+/** Error buzz 1000:1D47(1). */
+const beep = () => playEffect(SFX.ERROR);
 
 /** Key name -> character code as the BIOS would return it (low byte). */
 function keyCode(k: string): number {
@@ -123,11 +124,11 @@ export async function readLine(g: Game, size: number): Promise<string> {
     const k = await g.getKey();
     if (k === "Enter") break;
     if (k === "Backspace" || k === "ArrowLeft") {
-      if (s) { s = s.slice(0, -1); g.con.backspace(); } else beep();
+      if (s) { s = s.slice(0, -1); g.con.backspace(); } else await beep();
       continue;
     }
     const c = keyCode(k);
-    if (k.length === 1 && s.length !== size - 1 && c > 0x1f && c < 0x80) { s += k; putc(g, k); } else beep();
+    if (k.length === 1 && s.length !== size - 1 && c > 0x1f && c < 0x80) { s += k; putc(g, k); } else await beep();
   }
   return s.trim();
 }
@@ -159,7 +160,7 @@ export async function askYN(g: Game): Promise<string> {
       nl(g);
       return String.fromCharCode(c);
     }
-    beep();
+    await beep();
   }
 }
 
@@ -182,7 +183,7 @@ export async function askKey(g: Game, prompt: string, lo: string, hi: string): P
   const max = hi, min = lo;
   let first = true;
   for (;;) {
-    if (!first) beep();
+    if (!first) await beep();
     first = false;
     await say(g, prompt);
     const k = await g.getKey();

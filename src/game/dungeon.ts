@@ -43,6 +43,7 @@ import { rand8 as rnd } from "./rng";
 const rndSign = () => { const v = (rnd() << 24) >> 24; return v < 0 ? -1 : v > 0 ? 1 : 0; };
 import { sleep, askMember } from "./prompts";
 import { canAct } from "./party";
+import { playEffect, SFX } from "../audio/speaker";
 
 interface Wanderer { tile: number; x: number; y: number; px: number; py: number; level: number; }
 
@@ -164,7 +165,7 @@ class DungeonRun {
     while (!this.done) {
       if (this.s.dngLevel === SURFACE) { this.done = true; break; } // X-it / Y-up from level 1
 
-      this.cellEffects();
+      await this.cellEffects();
       this.refresh();
       if (!this.members.some((p) => p.status !== "D")) {
         // the party is dead: leave the dungeon; the main loop resurrects it (1000:0EB1, "All is Dark...")
@@ -189,8 +190,8 @@ class DungeonRun {
   /** Returns false when the command does not take a turn (turning, bad keys). */
   private async command(key: string): Promise<boolean> {
     switch (key) {
-      case "ArrowUp": this.advance(); return true;
-      case "ArrowDown": this.retreat(); return true;
+      case "ArrowUp": await this.advance(); return true;
+      case "ArrowDown": await this.retreat(); return true;
       case "ArrowLeft": this.con.print(M.turnLeft); this.turn(-1); return false;
       case "ArrowRight": this.con.print(M.turnRight); this.turn(1); return false;
     }
@@ -203,11 +204,9 @@ class DungeonRun {
       case "i": this.ignite(); return true;
       case "p": await this.peerGem(); return true;
       case "a": case "b": case "e": case "f": case "j": case "l": case "o": case "t": case "x": case "y":
-        this.con.print(M.notHere); return true;
-      case "v":
-        this.con.print(M.notHere); return false;
+        this.con.print(M.notHere); await playEffect(SFX.BAD_COMMAND); return true; // 1000:85E8
     }
-    // C)ast, M)ix, U)se, N)ew order, R)eady, W)ear, Z)tats, H)ole up, Q)uit & save: registered commands
+    // C)ast, M)ix, U)se, N)ew order, R)eady, W)ear, Z)tats, H)ole up, V)olume, Q)uit & save: registered commands
     const cmd = this.g.commands.get(key, "dungeon");
     if (cmd) {
       await cmd.run({ g: this.g, ctx: "dungeon" });
@@ -215,6 +214,7 @@ class DungeonRun {
       return cmd.key !== "q";
     }
     this.con.print(M.dngBadCommand);
+    await playEffect(SFX.BAD_COMMAND); // 1000:8562
     return false;
   }
 
@@ -227,15 +227,15 @@ class DungeonRun {
     return c !== 0xa1 && c < 0xc0;
   }
 
-  private advance() { // 1000:891E
+  private async advance() { // 1000:891E
     this.con.print(M.advance);
-    if (!this.passable(true, this.ahead(1))) { this.con.print(M.blocked); return; }
+    if (!this.passable(true, this.ahead(1))) { await this.g.blocked(); return; }
     this.step(this.dir, 1);
   }
 
-  private retreat() { // 1000:895F
+  private async retreat() { // 1000:895F
     this.con.print(M.retreat);
-    if (!this.passable(false, this.ahead(-1))) { this.con.print(M.blocked); return; }
+    if (!this.passable(false, this.ahead(-1))) { await this.g.blocked(); return; }
     this.step(this.dir, -1);
   }
 
@@ -280,31 +280,33 @@ class DungeonRun {
 
   // ------------------------------------------------------------------ cell effects (1000:9209, mode 3)
 
-  private cellEffects() {
+  private async cellEffects() {
     const c = this.here, t = c & 0xf0;
     if (t === 0xa0) {
       const sub = c & 3;
-      if (sub === 0) this.poisonField();
-      else if (sub === 2) this.hazard();
-      else if (sub === 3) this.sleepField();
+      if (sub === 0) await this.poisonField();
+      else if (sub === 2) await this.hazard();
+      else if (sub === 3) await this.sleepField();
     } else if (t === 0x80) {
       if (c === 0x80) { this.con.print(M.winds); this.s.balloonState = 0; return; }
       this.con.print(c < 0x88 ? M.fallingRocks : M.pit);
-      this.hazard();
+      await this.hazard();
     }
   }
 
 
-  private poisonField() { // 1000:91D1
-    for (const p of this.members.slice().reverse()) if (p.status === "G" && (rnd() & 7) === 0) p.status = "P";
+  /** Each member hit flashes with the hurt noise (1000:09D9). */
+  private async poisonField() { // 1000:91D1
+    for (const p of this.members.slice().reverse()) if (p.status === "G" && (rnd() & 7) === 0) { p.status = "P"; await playEffect(SFX.HURT); }
   }
 
-  private sleepField() { // 1000:919A
-    for (const p of this.members.slice().reverse()) if (canAct(p) && (rnd() & 3) === 0) p.status = "S";
+  private async sleepField() { // 1000:919A
+    for (const p of this.members.slice().reverse()) if (canAct(p) && (rnd() & 3) === 0) { p.status = "S"; await playEffect(SFX.HURT); }
   }
 
-  /** 1000:1584 underground: each living member, 50%: 10 + rand%15 damage. */
-  private hazard() {
+  /** 1000:1584 underground: the party flashes with the hit noise, then each living member, 50%: 10 + rand%15 damage. */
+  private async hazard() {
+    await playEffect(SFX.HIT);
     for (const p of this.members.slice().reverse())
       if ((rnd() & 1) && p.status !== "D") this.g.damage(p, (rnd() % 15) + 10);
   }
@@ -468,7 +470,7 @@ class DungeonRun {
     if (!canAct(p)) { this.con.print(M.disabled); return; }
     if (this.here !== 0x40) { this.con.print(M.notHere); return; }
     this.setCell(this.s.x, this.s.y, 0);
-    this.chestTrap(p);
+    await this.chestTrap(p);
     // 1000:70F1
     const gold = (rnd() % 80) + (rnd() & 7) + 10;
     this.con.print(M.chestHolds);
@@ -478,16 +480,18 @@ class DungeonRun {
   }
 
   /** 1000:7150: half the chests are trapped; type = (r1&3)&r2 with r1 even, i.e. only Acid or Poison. */
-  private chestTrap(p: PlayerRecord) {
+  private async chestTrap(p: PlayerRecord) {
     const r1 = rnd();
     if (r1 & 1) return;
     const type = r1 & 3 & rnd();
     this.con.print([M.trapAcid, M.trapSleep, M.trapPoison, M.trapBomb][type] + M.trap);
-    if (rnd() % 100 <= p.dex + 25) { this.con.print(M.evaded); return; }
-    if (type === 0) this.g.damage(p, rnd() % 30);
-    else if (type === 1) p.status = "S";
+    if (rnd() % 100 <= p.dex + 25) { this.con.print(M.evaded); await playEffect(SFX.FLEE); return; }
+    if (type === 3) { await this.hazard(); return; }
+    // acid, sleep, poison: the member flashes with the hurt noise (1000:09D9)
+    if (type === 1) p.status = "S";
     else if (type === 2) p.status = "P";
-    else this.hazard();
+    await playEffect(SFX.HURT);
+    if (type === 0) this.g.damage(p, rnd() % 30);
   }
 
   private ignite() { // 1000:7525
@@ -515,7 +519,7 @@ class DungeonRun {
     if (!canAct(p)) { this.con.print(M.disabledNl); return; }
     const d = this.loc.id - FIRST_DUNGEON;
     this.setCell(this.s.x, this.s.y, 0);
-    this.g.damage(p, ORB_DAMAGE[d] * 100);
+    await this.hurt(p, ORB_DAMAGE[d] * 100);
     const raise = (k: "str" | "dex" | "int", msg: string) => { p[k] = Math.min(ORB_STAT_CAP, p[k] + 5); this.con.print(msg); };
     if (ORB_STR[d]) raise("str", M.strength);
     if (ORB_DEX[d]) raise("dex", M.dexterity);
@@ -531,11 +535,17 @@ class DungeonRun {
     if (!canAct(p)) { this.con.print(M.disabledNl2); return; }
     switch (this.here & 0xf) {
       case 1: if (p.hp !== p.hpMax) { this.con.print(M.refreshing); p.hp = p.hpMax; return; } break;
-      case 2: this.con.print(M.nasty); this.g.damage(p, 100); return;
+      case 2: this.con.print(M.nasty); await this.hurt(p, 100); return;
       case 3: if (p.status === "P") { p.status = "G"; this.con.print(M.delicious); return; } break;
-      case 4: if (p.status !== "P") { p.status = "P"; this.con.print(M.choke); this.g.damage(p, 100); return; } break;
+      case 4: if (p.status !== "P") { p.status = "P"; this.con.print(M.choke); await this.hurt(p, 100); return; } break;
     }
     this.con.print(M.noEffect);
+  }
+
+  /** 1000:B730: the member's line flashes with three hurt noises, then the damage. */
+  private async hurt(p: PlayerRecord, n: number) {
+    for (let i = 0; i < 3; i++) await playEffect(SFX.HURT);
+    this.g.damage(p, n);
   }
 
   /** 1000:B93F: the dungeon's stone lies on its altar cell; +5 Honor and 200 XP to the Avatar. */

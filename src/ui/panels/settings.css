@@ -8,6 +8,8 @@
 .set-input { min-height: 32px; min-width: 0; width: 100%; box-sizing: border-box; font: inherit; font-size: 10px; color: var(--ui-text); background: #000; border: 1px solid var(--ui-line); border-radius: 4px; padding: 0 6px; }
 .set-input:focus-visible, .set-check:focus-visible { outline: 1px solid var(--ui-accent); }
 .set-check { justify-self: start; width: 22px; height: 22px; margin: 0; accent-color: var(--ui-accent); }
+.set-range { justify-self: stretch; min-height: 32px; margin: 0; accent-color: var(--ui-accent); }
+.set-range:focus-visible { outline: 1px solid var(--ui-accent); }
 .set-reload { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 8px 10px; border: 1px solid var(--ui-accent); border-radius: 4px; color: var(--ui-accent); font-size: 10px; }
 .panel .set-reload-btn { padding: 0 10px; border-color: var(--ui-accent); color: var(--ui-accent); white-space: nowrap; }
 @media (max-width: 520px) {

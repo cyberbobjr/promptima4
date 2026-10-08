@@ -59,6 +59,7 @@
   "help.desc.exit": "Leave your horse, ship or balloon.",
   "help.desc.yell": "On horseback: spur the horse to a gallop, or slow it down.",
   "help.desc.ztats": "Show the party: members, equipment, reagents and items.",
+  "help.desc.volume": "Turn the sound effects on or off.",
 
   "help.ctl.keyboard": "Keyboard",
   "help.ctl.keys": "Letters",

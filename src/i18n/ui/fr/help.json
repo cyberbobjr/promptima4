@@ -59,6 +59,7 @@
   "help.desc.exit": "Quitter votre cheval, navire ou ballon.",
   "help.desc.yell": "À cheval : lancer le cheval au galop, ou le ralentir.",
   "help.desc.ztats": "Afficher le groupe : membres, équipement, composants et objets.",
+  "help.desc.volume": "Activer ou couper les effets sonores.",
 
   "help.ctl.keyboard": "Clavier",
   "help.ctl.keys": "Lettres",
