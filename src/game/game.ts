@@ -28,11 +28,12 @@ import { runDungeon } from "./dungeon";
 import { LOCATIONS } from "./locations";
 import { Sky, checkMoongate } from "./world/sky";
 import { decodeObjects, type WorldObject } from "./world/objects";
-import { moveWorldMonsters, partyDeath, worldFight } from "./world/monsters";
+import { partyDeath, worldFight, worldTurn } from "./world/monsters";
 import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
 import { attack, getChest, holeUp, locate, openChest, quitSave, readyWeapon, volume, wearArmour, ztats, ztatsFor } from "./actions";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, partyRowsRects, statusRowRect } from "../ui/invert";
 
 export const CLASS_NAMES = CLASSES;
 
@@ -65,6 +66,8 @@ export class Game {
   readonly dungeon: DungeonHooks = { cell: null, setCell: null, exit: null, refresh: null, peer: null, state: null };
   /** Town doors opened with O)pen, closing again after a few turns. */
   openedDoors: { x: number; y: number; turns: number }[] = [];
+  /** The overworld creatures still have to act for this turn (world/monsters.ts worldTurn). */
+  private worldTurnPending = false;
   /** Monster that will attack at the end of this turn. */
   pendingAttack: WorldObject | null = null;
   /** Shrine reached through a moongate, entered at the end of the turn (-1 = none). */
@@ -188,6 +191,10 @@ export class Game {
         this.pendingShrine = -1;
         await this.enterShrine(v);
       }
+      if (this.worldTurnPending) {
+        this.worldTurnPending = false;
+        if (this.map.kind === "world" && !(this.save.location >= 17 && this.save.location <= 24)) await worldTurn(this);
+      }
       if (this.pendingAttack) {
         const m = this.pendingAttack;
         this.pendingAttack = null;
@@ -256,10 +263,10 @@ export class Game {
       s.food = 0;
       this.con.print(MSG_CORE.starving);
       for (const p of this.members) if (p.status !== "D") this.damagePlayer(p, 2);
-      void playEffect(SFX.HIT); // the whole party flashes (1000:1C53)
+      void inverted(this, partyRowsRects(s.members), () => playEffect(SFX.HIT)); // the whole party's lines invert (1000:1C53, 1000:224B)
     }
-    for (const p of this.members) {
-      if (p.status === "P") { this.damagePlayer(p, 2); void playEffect(SFX.HIT); }
+    for (const [i, p] of this.members.entries()) {
+      if (p.status === "P") { this.damagePlayer(p, 2); void inverted(this, [statusRowRect(i)], () => playEffect(SFX.HIT)); } // the member's line inverts
       else if (p.status === "S" && rand(8) === 0) p.status = "G";
       // MP regen +1 up to the class maximum (1000:13B6)
       if (p.status !== "D") p.mp = Math.min(maxMp(p), p.mp + 1);
@@ -267,7 +274,8 @@ export class Game {
     if (this.onShip && s.shipHull < 50 && rand(4) === 0) s.shipHull++;
     this.tickEffects();
     if (this.map.kind === "town") moveNpcs(this, this.map);
-    if (this.map.kind === "world" && !(this.save.location >= 17 && this.save.location <= 24)) moveWorldMonsters(this);
+    // monsters, shots, whirlpools: run by the main loop once the command is over (they take time)
+    if (this.map.kind === "world" && !(this.save.location >= 17 && this.save.location <= 24)) this.worldTurnPending = true;
     closeDoors(this);
   }
 
@@ -364,6 +372,7 @@ export class Game {
     const r = this.r;
     const { base, layers } = this.layers.visible();
     const drawLayers = () => { for (const l of layers) l.draw?.(r); };
+    r.setInverts(this.layers.inverts()); // src/ui/invert.ts
     if (!base || !this.save || !this.map) {
       r.setView(null);
       r.view3d = null;

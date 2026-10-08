@@ -250,17 +250,31 @@ const cache = new Map<string, { buf: AudioBuffer; us: number }>();
  * under the test driver's manual clock, so sound never changes the timing of tests.
  */
 export function playEffect(n: number, param = 0): Promise<void> {
-  if (!soundOn() || !(n >= 0 && n < EFFECT_COUNT) || !ctx || !master || ctx.state !== "running") return Promise.resolve();
+  if (!(n >= 0 && n < EFFECT_COUNT)) return Promise.resolve();
   const random = n === 6 || n === 7 || n === 10;
-  const key = `${n}:${param & 0xff}`;
-  let fx = random ? undefined : cache.get(key);
+  return playSpans(() => effectSpans(n, param), random ? undefined : `${n}:${param & 0xff}`);
+}
+
+/** True when a waveform would be heard now (sound on, AudioContext created by a gesture and running). */
+export const speakerReady = (): boolean => soundOn() && !!ctx && !!master && ctx.state === "running";
+
+/**
+ * Plays any speaker waveform (other programs' routines, e.g. TITLE.EXE's: src/audio/titleSounds.ts)
+ * through the same queue as the effects. `make` is only called when the sound can be heard; a
+ * `cacheKey` keeps the rendered buffer for waveforms without randomness. Same promise semantics as
+ * playEffect: resolves when the waveform has played, at once when nothing can be heard or under
+ * the test clock.
+ */
+export function playSpans(make: () => Spans, cacheKey?: string): Promise<void> {
+  if (!speakerReady() || !ctx || !master) return Promise.resolve();
+  let fx = cacheKey === undefined ? undefined : cache.get(cacheKey);
   if (!fx) {
-    const spans = effectSpans(n, param);
+    const spans = make();
     const data = renderSpans(spans, ctx.sampleRate);
     const buf = ctx.createBuffer(1, data.length, ctx.sampleRate);
     buf.getChannelData(0).set(data);
     fx = { buf, us: spansDuration(spans) };
-    if (!random) cache.set(key, fx);
+    if (cacheKey !== undefined) cache.set(cacheKey, fx);
   }
   const now = ctx.currentTime;
   const start = Math.max(now + 0.005, queueEnd);

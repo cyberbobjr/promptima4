@@ -15,6 +15,7 @@ import { canAct, isAlive } from "./party";
 import { peerAtMap } from "./items";
 import { MSG_MAGIC as M } from "./texts/magic";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, VIEWPORT_RECT } from "../ui/invert";
 
 /**
  * Hooks filled by dungeon.ts while the party is underground (the level data lives in the dungeon module).
@@ -62,7 +63,7 @@ async function pay(c: Ctx): Promise<boolean> {
   const mp = SPELLS[c.spell].mp;
   p.mp = Math.max(0, p.mp - mp);
   await playEffect(SFX.CAST, mp);
-  await playEffect(SFX.MAGIC, 0x60 + c.spell);
+  await inverted(c.g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0x60 + c.spell)); // between two viewport inverts (1000:2241)
   if (c.g.spellEffect === "N") { await failed(c.g); return false; }
   return true;
 }

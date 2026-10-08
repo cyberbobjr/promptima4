@@ -54,6 +54,7 @@ export const SCROLL_TILES = [T.DEEP_WATER, T.WATER, T.SHALLOWS, T.POISON_FIELD, 
 
 /** Two-frame figures: tile pairs that alternate frames. Monsters from 0x90 have four frames. */
 export function animFrame(t: number, frame: number): number {
+  if (t >= 0x80 && t <= 0x83) return t; // pirate ships keep their heading (1000:3605 does not animate 0x80)
   if ((t >= 0x20 && t <= 0x2f) || (t >= 0x50 && t <= 0x5f) || (t >= 0x80 && t < 0x90)) return (t & ~1) | (frame & 1);
   if (t >= 0x90) return (t & ~3) | (frame & 3);
   return t;

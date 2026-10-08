@@ -44,6 +44,8 @@ const rndSign = () => { const v = (rnd() << 24) >> 24; return v < 0 ? -1 : v > 0
 import { sleep, askMember } from "./prompts";
 import { canAct } from "./party";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, statusRowRect } from "../ui/invert";
+import { hazardFlash } from "./endgame/ui";
 
 interface Wanderer { tile: number; x: number; y: number; px: number; py: number; level: number; }
 
@@ -297,16 +299,21 @@ class DungeonRun {
 
   /** Each member hit flashes with the hurt noise (1000:09D9). */
   private async poisonField() { // 1000:91D1
-    for (const p of this.members.slice().reverse()) if (p.status === "G" && (rnd() & 7) === 0) { p.status = "P"; await playEffect(SFX.HURT); }
+    for (const p of this.members.slice().reverse()) if (p.status === "G" && (rnd() & 7) === 0) { p.status = "P"; await this.rowFlash(p, () => playEffect(SFX.HURT)); }
   }
 
   private async sleepField() { // 1000:919A
-    for (const p of this.members.slice().reverse()) if (canAct(p) && (rnd() & 3) === 0) { p.status = "S"; await playEffect(SFX.HURT); }
+    for (const p of this.members.slice().reverse()) if (canAct(p) && (rnd() & 3) === 0) { p.status = "S"; await this.rowFlash(p, () => playEffect(SFX.HURT)); }
   }
 
-  /** 1000:1584 underground: the party flashes with the hit noise, then each living member, 50%: 10 + rand%15 damage. */
+  /** Runs `fn` (a sound) with the member's status line inverted (1000:224B, as 1000:09D9 and 1000:B730 do). */
+  private rowFlash(p: PlayerRecord, fn: () => Promise<void>) {
+    return inverted(this.g, [statusRowRect(this.s.players.indexOf(p))], fn);
+  }
+
+  /** 1000:1584 underground: the party flashes (status lines, hit noise, shake), then each living member, 50%: 10 + rand%15 damage. */
   private async hazard() {
-    await playEffect(SFX.HIT);
+    await hazardFlash(this.g);
     for (const p of this.members.slice().reverse())
       if ((rnd() & 1) && p.status !== "D") this.g.damage(p, (rnd() % 15) + 10);
   }
@@ -490,7 +497,7 @@ class DungeonRun {
     // acid, sleep, poison: the member flashes with the hurt noise (1000:09D9)
     if (type === 1) p.status = "S";
     else if (type === 2) p.status = "P";
-    await playEffect(SFX.HURT);
+    await this.rowFlash(p, () => playEffect(SFX.HURT));
     if (type === 0) this.g.damage(p, rnd() % 30);
   }
 
@@ -544,7 +551,7 @@ class DungeonRun {
 
   /** 1000:B730: the member's line flashes with three hurt noises, then the damage. */
   private async hurt(p: PlayerRecord, n: number) {
-    for (let i = 0; i < 3; i++) await playEffect(SFX.HURT);
+    await this.rowFlash(p, async () => { for (let i = 0; i < 3; i++) await playEffect(SFX.HURT); });
     this.g.damage(p, n);
   }
 

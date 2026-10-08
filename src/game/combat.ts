@@ -33,6 +33,7 @@ import { rand8 } from "./rng";
 export { rand8 };
 import { sleep } from "./prompts";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, statusRowRect, VIEWPORT_RECT } from "../ui/invert";
 
 const WALKABLE = new Set(WALKABLE_TILES);
 
@@ -92,6 +93,8 @@ class Combat {
   effect: { x: number; y: number; tile: number } | null = null;
   lastKill: { x: number; y: number } | undefined;
   private active = -1;
+  /** Dungeon rooms: the edge the first member left by (1000:79C9). */
+  private roomExit: Dir | null = null;
 
   constructor(readonly g: Game, readonly req: CombatRequest) {
     this.tiles = req.arena.tiles.slice();
@@ -245,7 +248,13 @@ class Combat {
       // leaving the arena = fleeing (1000:7962): full-HP members fleeing evil foes cost Valor and Sacrifice.
       // In dungeon rooms the edge taken is the way out (orientation 0 W, 1 N, 2 E, 3 S).
       const arena = this.req.arena as CombatMap & { exitDir?: number | null };
-      if ("exitDir" in arena) arena.exitDir = { W: 0, N: 1, E: 2, S: 3 }[d];
+      if ("exitDir" in arena) {
+        // 1000:79C9: the first member out fixes the exit (column DS:96EE or row DS:96F4); the others
+        // must take the same one, else "All must use same exit!" with the error buzz (1000:794D)
+        if (this.roomExit !== null && this.roomExit !== d) { g.con.print(M.sameExit); await playEffect(SFX.ERROR); return; }
+        this.roomExit = d;
+        arena.exitDir = { W: 0, N: 1, E: 2, S: 3 }[d];
+      }
       await playEffect(SFX.FLEE); // 1000:7962: every member leaving the field
       if (!this.monstersLeft) { m.present = false; return; }
       g.con.print(M.fleeing);
@@ -266,9 +275,28 @@ class Combat {
   /** Fields under a member (1000:9209, combat): the member's line flashes with the hurt noise (1000:09D9). */
   private async terrainEffect(m: Member) {
     const t = this.tileAt(m.x, m.y);
-    if ((t === T.POISON_FIELD || t === T.SWAMP) && m.p.status === "G") { m.p.status = "P"; this.g.con.print(M.poisoned); await playEffect(SFX.HURT); }
-    else if (t === T.FIRE_FIELD || t === T.LAVA) { await playEffect(SFX.HURT); this.g.damagePlayer(m.p, 16 + (rand8() % 32)); this.g.con.print(M.burned); }
-    else if (t === T.SLEEP_FIELD && m.p.status === "G") { m.p.status = "S"; this.g.con.print(M.slept); await playEffect(SFX.HURT); }
+    const hurt = () => inverted(this.g, [statusRowRect(m.i)], () => playEffect(SFX.HURT)); // 1000:09D9
+    if ((t === T.POISON_FIELD || t === T.SWAMP) && m.p.status === "G") { m.p.status = "P"; this.g.con.print(M.poisoned); await hurt(); }
+    else if (t === T.FIRE_FIELD || t === T.LAVA) { await hurt(); this.g.damagePlayer(m.p, 16 + (rand8() % 32)); this.g.con.print(M.burned); }
+    else if (t === T.SLEEP_FIELD && m.p.status === "G") { m.p.status = "S"; this.g.con.print(M.slept); await hurt(); }
+  }
+
+  /** 1000:96B9 / 1000:9764: the member's status line is inverted (1000:224B) while the hit shows with the hurt noise. */
+  private hurtFlash(m: Member, tile: number) {
+    return inverted(this.g, [statusRowRect(m.i)], () => this.flash(m.x, m.y, tile, SFX.HURT));
+  }
+
+  /**
+   * 1000:9B03: under Jinx, a monster stepping onto another one hits it instead: the hit tile shows on
+   * the victim with the hit noise and it takes rand & 0x3F damage, for no experience. True if it did.
+   */
+  private async jinx(x: number, y: number): Promise<boolean> {
+    if (this.g.spellEffect !== "J") return false;
+    const victim = this.monsterAt(x, y);
+    if (!victim) return false;
+    await this.flash(x, y, T.HIT_FLASH, SFX.HIT);
+    this.damageMonster(victim, rand8() & 0x3f, null);
+    return true;
   }
 
   private async attack(m: Member) {
@@ -417,7 +445,7 @@ class Combat {
     // sleep spell (Reaper, Balron)
     if (has(mon.info, "castsSleep") && g.spellEffect !== "N" && rand8() % 4 === 0) {
       g.con.print(M.sleep);
-      await playEffect(SFX.MAGIC, 0x80); // 1000:9D7E, with a screen flash
+      await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0x80)); // 1000:9D7E, between two viewport inverts (1000:2241)
       for (const m of this.party) if (m.present && m.p.status === "G" && rand8() & 1) m.p.status = "S";
       return;
     }
@@ -440,6 +468,7 @@ class Combat {
         await playEffect(SFX.FLEE); // 1000:9C56
         return;
       }
+      if (await this.jinx(nx, ny)) return;
       if (this.canEnter(mon, nx, ny)) { mon.x = nx; mon.y = ny; }
       return;
     }
@@ -456,6 +485,7 @@ class Combat {
       : [[0, Math.sign(dy)], [Math.sign(dx), 0]];
     for (const [sx, sy] of steps) {
       if (!sx && !sy) continue;
+      if (await this.jinx(mon.x + sx, mon.y + sy)) return;
       if (this.canEnter(mon, mon.x + sx, mon.y + sy)) { mon.x += sx; mon.y += sy; return; }
     }
   }
@@ -467,7 +497,7 @@ class Combat {
     await playEffect(SFX.MONSTER_ATTACK); // 1000:9C06
     const prot = g.spellEffect === "P" && rand8() & 1;
     if (prot || rand8() <= ARMOURS[m.p.armour].defense) { g.con.print(M.missed); return; }
-    await this.flash(m.x, m.y, T.HIT_FLASH, SFX.HURT); // 1000:96B9
+    await this.hurtFlash(m, T.HIT_FLASH); // 1000:96B9
     const r = rand8() % Math.max(1, mon.info.maxDamageRoll);
     this.hurtMember(m, (r >> 4) * 10 + (r % 10));
   }
@@ -499,7 +529,7 @@ class Combat {
       return;
     }
     if (kind === "randomField") tile = tiles.randomField;
-    await this.flash(m.x, m.y, tile, SFX.HURT); // 1000:9764 / 96B9
+    await this.hurtFlash(m, tile); // 1000:9764 / 96B9
     const dmg = () => { const r = rand8() % Math.max(1, mon.info.maxDamageRoll); return (r >> 4) * 10 + (r % 10); };
     switch (tile) {
       case T.POISON_FIELD:

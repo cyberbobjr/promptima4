@@ -93,6 +93,8 @@ export const MSG_FIGHT = defineTexts("msg.fight", {
   dark: 0x2648,
   altarRoom: 0x25b9,
   leaveRoom: 0x25f4,
+  /** 1000:794D */
+  sameExit: 0x239e,
   intoDungeon: 0x2601,
   /** (1000:730D), */
   getChest: 0x228c,

@@ -10,6 +10,7 @@ import { isTalkOver, T, tileFlags, Walk } from "./tiles";
 import { runDungeon } from "./dungeon";
 import { MSG_CORE } from "./texts/core";
 import { TALK } from "./town/strings";
+import { playEffect, SFX } from "../audio/speaker";
 
 /** Townsfolk movement at the end of a turn; hostile ones attack when adjacent. */
 export function moveNpcs(g: Game, town: TownMap) {
@@ -112,11 +113,20 @@ export async function klimb(g: Game) {
     await enterTown(g, g.map.loc, 1, [g.px, g.py]);
     return;
   }
-  if (g.inBalloon) { g.con.print(MSG_CORE.altitude); return; }
+  // 1000:4477: the balloon takes off (DS:9320 = 1; nothing moves on the world while it flies, 1000:1C53)
+  if (g.inBalloon && g.map.kind === "world") { g.con.print(MSG_CORE.altitude); g.save.balloonState = 1; return; }
   g.con.newline(); g.con.print(MSG_CORE.what);
 }
 
 export async function descend(g: Game) {
+  // 1000:44EE: the balloon lands, on grass only (DS:9444 = 4), with the error buzz elsewhere
+  if (g.inBalloon && g.map.kind === "world") {
+    g.con.print(MSG_CORE.landBalloon);
+    if (tileAt(g.map, g.px, g.py) !== T.GRASS) { await playEffect(SFX.ERROR); g.con.print(MSG_CORE.notHere); return; }
+    if (g.save.balloonState === 0) { g.con.print(MSG_CORE.alreadyLanded); return; }
+    g.save.balloonState = 0;
+    return;
+  }
   g.con.print(MSG_CORE.descend);
   if (g.map.kind === "town" && tileAt(g.map, g.px, g.py) === T.LADDER_DOWN && g.map.level === 1) {
     g.con.print(MSG_CORE.toFirstFloor);

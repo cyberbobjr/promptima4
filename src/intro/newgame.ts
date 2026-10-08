@@ -6,6 +6,7 @@ import { assets } from "../assets/store";
 import type { TitleData } from "./data";
 import { TITLE } from "./texts";
 import { Abort, Keys, Screen } from "./screen";
+import { titleBuzz } from "../audio/titleSounds";
 
 const pics = new Map<string, Uint8Array>();
 async function picture(name: string): Promise<Uint8Array> {
@@ -57,10 +58,11 @@ export class NewGame {
       if (isEsc(k)) return null; // the original only beeps here
       if (k.key === "Enter") break;
       if (k.key === "Backspace" || k.key === "ArrowLeft") {
-        if (buf) { s.putc("\b"); buf = buf.slice(0, -1); }
+        if (buf) { s.putc("\b"); buf = buf.slice(0, -1); } else await titleBuzz(); // 1000:2696: nothing to erase
         continue;
       }
       if (k.key.length === 1 && k.key >= " " && k.key < "\x7f" && buf.length < 0xc - 1) { buf += k.key; s.putc(k.key); }
+      else await titleBuzz(); // FUN_1000_2656: buffer full or not a character (1000:21BF)
     }
     const name = buf.trim();
     if (!name) return null;
@@ -71,6 +73,7 @@ export class NewGame {
       const c = k.key.toUpperCase();
       if (c === "M" || c === "F") { s.putc(c); return { name, sex: c }; }
       if (isEsc(k) || k.key === "Enter" || k.key === " ") return null;
+      await titleBuzz(); // FUN_1000_3030: neither M nor F (1000:21BF)
     }
   }
 

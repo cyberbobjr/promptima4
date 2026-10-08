@@ -5,6 +5,7 @@ import { rand8 } from "../rng";
 import { T } from "../tiles";
 import type { Game } from "../game";
 import { playEffect, SFX } from "../../audio/speaker";
+import { invertAreas, inverted, VIEWPORT_RECT } from "../../ui/invert";
 
 export class Sky {
   private moonSub = 0;
@@ -44,14 +45,18 @@ export class Sky {
 /** Stepping into the open gate sends the party to the gate of Felucca's phase (1000:2A91). */
 export async function checkMoongate(g: Game) {
   if (g.map.kind !== "world" || g.sky.moongateTile(g.save, g.px, g.py) !== T.MOONGATE3) return;
-  // the screen flashes with the magic sound (pulse width 0xA0) as the party steps in, and again at arrival
-  await playEffect(SFX.MAGIC, 0xa0);
+  // the viewport is inverted (1000:2241) during the magic sound (pulse width 0xA0) as the party steps
+  // in, and again at arrival
   if (g.save.trammelPhase === 4 && g.save.feluccaPhase === 4) {
-    // both moons full: the gate leads to the Shrine of Spirituality (1000:2A91)
+    // both moons full: the gate leads to the Shrine of Spirituality (1000:2A91); the viewport stays
+    // inverted until the shrine screen replaces it
+    const restore = invertAreas(g, [VIEWPORT_RECT]);
+    try { await playEffect(SFX.MAGIC, 0xa0); } finally { restore(); }
     g.pendingShrine = 6;
     return;
   }
+  await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xa0));
   const dest = MOONGATES[g.save.feluccaPhase];
   g.setPos(dest.x, dest.y);
-  await playEffect(SFX.MAGIC, 0xa0);
+  await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xa0));
 }

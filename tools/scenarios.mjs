@@ -19,7 +19,7 @@ const OUT = path.resolve("test-output/scenarios");
 // step: key name ("ArrowUp", "a", "Enter"), "key*n", "type:text", "tick:n", "wait:ms", "eval:js", "shot"
 export const SCENARIOS = {
   world: ["tick:4", "shot", "ArrowRight*3", "tick:2", "shot", "ArrowUp*2", "shot"],
-  ztats: ["z", "wait:300", "shot", "1", "wait:300", "shot"],
+  ztats: ["z", "wait:300", "shot", "wait:300", "shot"],
   castle: ["eval:__game.setPos(86,107)", "shot", "e", "wait:800", "tick:2", "shot", "ArrowUp*4", "tick:2", "shot"],
   dungeon: ["eval:__toDungeon(17)", "e", "wait:1500", "shot", "i", "wait:600", "shot", "ArrowUp", "wait:600", "shot", "ArrowLeft", "wait:600", "shot"],
   combat: ["eval:void __game.worldFight({ tile: 0xc0, x: __game.px, y: __game.py - 1 })", "wait:1200", "shot",
@@ -28,7 +28,7 @@ export const SCENARIOS = {
   // M)ix: spell list then reagent list in the status panel; shrine of Honesty: mantra prompt
   mix: ["m", "wait:400", "shot", "a", "wait:400", "shot", "Escape", "Escape", "Enter", "wait:400", "shot"],
   shrine: ["eval:__game.save.runes = 0xff", "eval:__game.save.lastMeditation = 0xffff", "eval:void __game.enterShrine(0)", "wait:1500", "shot", "type:honesty", "Enter", "1", "wait:800", "shot", "wait:6000", "type:ahm", "Enter", "wait:3000", "shot"],
-  dungeonCmds: ["eval:__toDungeon(17)", "e", "wait:1500", "i", "wait:500", "z", "1", "wait:400", "shot", "c", "a", "wait:600", "shot", "u", "wait:400", "shot", "Escape", "n", "wait:400", "shot"],
+  dungeonCmds: ["eval:__toDungeon(17)", "e", "wait:1500", "i", "wait:500", "z", "wait:400", "shot", "c", "a", "wait:600", "shot", "u", "wait:400", "shot", "Escape", "n", "wait:400", "shot"],
   combatCmds: ["eval:void __game.worldFight({ tile: 0xc0, x: __game.px, y: __game.py - 1 })", "wait:1200", "c", "wait:400", "shot", "a", "wait:800", "shot", "u", "wait:400", "shot", "Escape", "wait:400", "shot"],
   talk: ["eval:__game.setPos(86,107)", "e", "wait:800", "eval:(() => { const n = __game.map.npcs.find((n) => n.dialogue && (n.tile & ~1) !== 0x5e); n.movement = 0; __game.setPos(n.x, n.y + 1); })()",
     "t", "ArrowUp", "wait:600", "shot", "type:name", "Enter", "wait:500", "shot", "type:job", "Enter", "wait:500", "shot", "type:xyzzy", "Enter", "wait:500", "type:bye", "Enter", "wait:500", "shot"],

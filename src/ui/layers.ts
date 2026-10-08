@@ -8,7 +8,7 @@
 // The topmost layer that provides a part wins for that part; `draw` callbacks run bottom to top
 // after the base screen. A `fullscreen` layer hides everything below it.
 import type { Scene, Camera } from "three";
-import type { Renderer } from "../render/renderer";
+import type { Renderer, ScreenRect } from "../render/renderer";
 
 /** Contents of the party panel when a mode replaces it (shops, inventories): title + 8 rows. */
 export interface StatusPanel { title: string; rows: string[] }
@@ -26,6 +26,11 @@ export interface Layer {
   status?: () => StatusPanel | null;
   /** Drawn after the base screen and the layers below. */
   draw?: (r: Renderer) => void;
+  /**
+   * Screen areas whose colours are inverted over everything (src/ui/invert.ts: the viewport and status
+   * line inverts of EGA.DRV). They add up like XORs: an area inverted by two layers looks normal.
+   */
+  invert?: readonly ScreenRect[];
 }
 
 export interface LayerHandle { remove(): void }
@@ -56,6 +61,11 @@ export class LayerStack {
     const { layers } = this.visible();
     for (let i = layers.length - 1; i >= 0; i--) if (layers[i][part]) return layers[i][part];
     return undefined;
+  }
+
+  /** Inverted areas of the visible layers, bottom to top. */
+  inverts(): ScreenRect[] {
+    return this.visible().layers.flatMap((l) => l.invert ?? []);
   }
 
   get size(): number { return this.layers.length; }

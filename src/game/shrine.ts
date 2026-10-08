@@ -7,6 +7,7 @@ import { addDrawHook, blankView, loadPicture, PixelLayer, showTiles } from "./en
 import { askKey, flushKeys, sameText, ticks } from "./prompts";
 import { MSG_MAGIC as M } from "./texts/magic";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, VIEWPORT_RECT } from "../ui/invert";
 
 const SPIRITUALITY = 6;
 
@@ -47,7 +48,7 @@ async function meditate(g: Game, virtue: number) {
     }
     if (cycles === MEDITATION.maxCycles && s.karma[virtue] === MEDITATION.elevationKarma) {
       say(M.partialAvatarhood + VIRTUES[virtue]);
-      await playEffect(SFX.MAGIC, 0xff); // between two screen flashes (1000:E907)
+      await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xff)); // between two viewport inverts (1000:E907, 1000:2241)
       g.con.println("");
       s.karma[virtue] = 0;
       flushKeys(g);

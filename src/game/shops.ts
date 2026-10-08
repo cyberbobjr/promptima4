@@ -18,6 +18,8 @@ import {
 import { karmaDec, karmaInc, Virtue } from "./karma";
 import { canAct, isAlive } from "./party";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, statusRowRect, VIEWPORT_RECT } from "../ui/invert";
+import type { PlayerRecord } from "../formats/save";
 
 type Player = Game["save"]["players"][number];
 
@@ -581,8 +583,10 @@ async function healer(g: Game, town: TownId) {
     if (c === "N") await say(g, S.cannot);
     return false;
   };
-  // 1000:DA79: the screen and the member's line flash with the magic sound (pulse width 0xC0)
-  const healed = () => playEffect(SFX.MAGIC, 0xc0);
+  // 1000:DA79: the viewport (1000:2241) and the member's line (1000:224B) are inverted during the magic
+  // sound (pulse width 0xC0)
+  const healed = (p: PlayerRecord) =>
+    inverted(g, [VIEWPORT_RECT, statusRowRect(s.players.indexOf(p))], () => playEffect(SFX.MAGIC, 0xc0));
 
   await say(g, S.welcome, def.name);
   nl(g);
@@ -606,21 +610,21 @@ async function healer(g: Game, town: TownId) {
           await pause(g, 5);
           await say(g, S.free);
         } else ok = await pay(HEALER_PRICES.cure);
-        if (ok) { p.status = "G"; await healed(); }
+        if (ok) { p.status = "G"; await healed(p); }
       } else await say(g, S.noPoison);
     } else if (p && c === 0x42) {
       // 1000:DB29 heal
       if (p.hp === p.hpMax) await say(g, S.healthy);
       else {
         await say(g, S.heal);
-        if (s.gold >= HEALER_PRICES.heal) { if (await pay(HEALER_PRICES.heal)) { p.hp = p.hpMax; await healed(); } }
+        if (s.gold >= HEALER_PRICES.heal) { if (await pay(HEALER_PRICES.heal)) { p.hp = p.hpMax; await healed(p); } }
         else await say(g, S.noGold);
       }
     } else if (p && c === 0x43) {
       // 1000:DB93 resurrect
       if (p.status === "D") {
         await say(g, S.res);
-        if (s.gold >= HEALER_PRICES.resurrect) { if (await pay(HEALER_PRICES.resurrect)) { p.status = "G"; await healed(); } }
+        if (s.gold >= HEALER_PRICES.resurrect) { if (await pay(HEALER_PRICES.resurrect)) { p.status = "G"; await healed(p); } }
         else await say(g, S.noGold2);
       } else await say(g, S.notDead);
     }

@@ -15,6 +15,8 @@ import { T } from "./tiles";
 import { encodeObjects } from "./world/objects";
 import { worldFight, worldMonsterAt } from "./world/monsters";
 import { playEffect, SFX, toggleSound } from "../audio/speaker";
+import { inverted, statusRowRect } from "../ui/invert";
+import { hazardFlash } from "./endgame/ui";
 
 export async function attack(g: Game) {
   g.con.print(MSG_CORE.attack);
@@ -56,13 +58,16 @@ function printStats(g: Game, p: PlayerRecord) {
   g.con.println(`${M.statInt}${p.int} ${M.statEx}${p.xp}`);
 }
 
+/**
+ * Z)tats (1000:4E45): the member is chosen with 1000:1287, which buzzes (effect 1) and asks again for
+ * a number above the party size, like the number keys of the stats browser 1000:4CC1. The browser
+ * itself (pages of members, equipment, items) is the port's console listing; "0" (its items page) does
+ * nothing here.
+ */
 export async function ztats(g: Game) {
-  await say(g, MSG_CORE.ztatsFor);
-  const k = await g.getKey();
-  const n = parseInt(k, 10);
-  if (!(n >= 1 && n <= g.save.members)) { g.con.println(""); return; }
-  g.con.println(String(n));
-  printStats(g, g.save.players[n - 1]);
+  const i = await g.askMember(MSG_CORE.ztatsFor);
+  if (i < 0) return;
+  printStats(g, g.save.players[i]);
 }
 
 /** R)eady a weapon (1000:7631): letter A..P from the inventory, class mask bit 0x80 >> class. */
@@ -157,13 +162,13 @@ export async function openChest(g: Game, who: number) {
     const p = who >= 0 ? g.save.players[who] : null;
     if (!p || rand8() % 100 <= p.dex + 25) { g.con.print(MSG_CORE.evaded); await playEffect(SFX.FLEE); }
     else if (kind === 3) { // bomb: the whole party (1000:1584)
-      await playEffect(SFX.HIT);
+      await hazardFlash(g);
       for (const m of g.members) if (m.status !== "D" && rand8() & 1) g.damagePlayer(m, 10 + (rand8() % 15));
     } else {
       // acid, sleep, poison: the member's line flashes with the hurt noise (1000:09D9)
       if (kind === 1) p.status = "S";
       else if (kind === 2) p.status = "P";
-      await playEffect(SFX.HURT);
+      await inverted(g, [statusRowRect(who)], () => playEffect(SFX.HURT));
       if (kind === 0) g.damagePlayer(p, rand8() % 30);
     }
   }

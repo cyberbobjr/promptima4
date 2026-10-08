@@ -273,10 +273,9 @@ Source: unpacked AVATAR.EXE image, DS = image 0xF0D0. (Scratch extraction script
   The command then ends the turn like any other (world 1000:1C06, combat 1000:5B73, dungeon 1000:857E + 87E2).
   The flag is not saved.
 - Noise effects draw their bytes from the game generator 1000:1771.
-- Many effects come with screen effects: 1000:2241 (driver slot 0x12, whole-screen invert) before and after
-  effect 9; 1000:224B(i) (slot 0x16, invert member i's status line) around effect 7 (helpers 1000:09D9, 9764,
-  96B9, B730) and around effect 6 in 1000:1584 / 1C53 / 87E2; 1000:095E (screen shake) after effect 6 in 0501/05CE.
-  The port plays the sounds only (no screen invert).
+- Many effects come with screen effects: 1000:2241 (viewport invert) before and after effect 9; 1000:224B(i)
+  (invert member i's status line) around effect 7 (helpers 1000:09D9, 9764, 96B9, B730) and around effect 6 in
+  1000:1584 / 1C53 / 87E2; 1000:095E (screen shake) after effect 6 in 0501/05CE/1584. See "Screen inverts" below.
 
 ### Effect table DS:06A7
 Durations from the model above ("half" = half-period, the time between two toggles).
@@ -309,16 +308,16 @@ Durations from the model above ("half" = half-period, the time between two toggl
 | 1 | 11F9, 12D6, 1445, 162F | key prompt out of range, direction prompt with another key, line input full / backspace on empty, Y/N prompt | prompts.ts, Game.askDir |
 | 1 | 75DC | weapon not allowed for the class | actions readyWeapon |
 | 1 | 8D6D | reagent found over 99 (DS:27B5) | items findReagent |
-| 1 | 794D | dungeon room: members must leave by the same exit | not ported (rule missing) |
-| 1 | 44EE | balloon cannot land here | not ported (balloon landing missing) |
-| 1 | 4CC1 | Z)tats: member number out of range | not ported (the Z)tats prompt differs) |
+| 1 | 794D | dungeon room: members must leave by the same exit (DS:239E) | combat moveMember |
+| 1 | 44EE | balloon cannot land here (not grass) | places descend |
+| 1 | 4CC1 | Z)tats: member number out of range | actions ztats: the member prompt 1000:1287 (11F9) buzzes the same way; no stats browser |
 | 1 | C454 | disk swap prompt, wrong drive | not applicable |
 | 1 | CAF6, CD80 (x2), CEBE, D085, D1D0, D4AE, DD24, DE35, DFAF | shops: negative amounts, item not sold here, wrong key at the buy/sell or tavern menu | shops.ts |
 | 2 | 191E (1A29), 5A6B (5BFC), 84D2 (8562) | bad command (world/town, combat, dungeon) | Game.command, combat playerTurn, dungeon command |
 | 2 | 84D2 (85EF) | dungeon: command not available underground (DS:0606) | dungeon command |
 | 2 | 73C9 | cannons: not a broadside | items fireCannon |
 | 3 | 73C9 | the party's cannon fires | items fireCannon |
-| 3 | 5569 | a pirate ship fires (564B) | not ported (no pirate cannon) |
+| 3 | 5569 | a pirate ship fires, or a sea serpent / lava lizard / dragon breathes (564B) | world/monsters fireAtParty |
 | 3 | 978C | a monster's missile, field or spell leaves | combat monsterRanged |
 | 4 | 61D1, 60F1 | the party's attack (melee swing, missile launch) | combat attack |
 | 4 | 5F9D | miss with nothing in the way (param 0): the attack sound again | combat missed() |
@@ -326,9 +325,9 @@ Durations from the model above ("half" = half-period, the time between two toggl
 | 6 | 6012 | the party hits a creature | combat resolveHit |
 | 6 | 6466, 6BF8 | projectile spell / Tremor hits | magic projectile, Tremor |
 | 6 | 9F7B (x2) | a monster on a damaging field / falling asleep on a sleep field | combat monstersTurn (damaging fields; the port has no sleep-field case) |
-| 6 | 9B03 | Jinx: a monster hits another | not ported (no Jinx in combat) |
-| 6 | 5569, 73C9 | a cannonball hits | items fireCannon (pirates: not ported) |
-| 6 | 1584 | party hazard (bomb trap, falling rocks, pit, fire fields, whirlpool, cannon) | chest bomb (actions, dungeon), dungeon hazard |
+| 6 | 9B03 | Jinx: a monster steps onto another and hits it | combat jinx() |
+| 6 | 5569, 73C9 | a cannonball hits an object | world/monsters fireAtParty, items fireCannon |
+| 6 | 1584 | party hazard (bomb trap, falling rocks, pit, cannonball/fire bolt, whirlpool, twister) | endgame/ui hazardFlash: chest bomb (actions, dungeon), dungeon hazard, world/monsters partyHazard |
 | 6 | 1C53 (x2), 87E2 (x2) | end of turn: poisoned member, starving party | Game.endTurn (also used underground) |
 | 6 | 0501 | candle at the Abyss entrance + shake | items useAbyssItem |
 | 6 | 05CE (x6) | skull: 3 x (sound + shake + flash), both cases | items useSkull |
@@ -349,10 +348,10 @@ Durations from the model above ("half" = half-period, the time between two toggl
 | 9 (0xFF) | E72C | partial Avatarhood at a shrine | shrine.ts |
 | 10 (MP) | 63B4 | every spell paid: one burst per MP point | magic pay() |
 | 10 (10 / 0x14) | E442 / E59B | Lord British heals / resurrects | talk.ts |
-| 11 | 786F, 7821 | whirlpool takes the party or an object | not ported (no whirlpool) |
-| 12 | 78D1, 7821 | twister hits the party or an object | not ported (no twister) |
+| 11 | 786F, 7821 | whirlpool takes the party or an object | world/monsters whirlpool, swallow |
+| 12 | 78D1, 7821 | twister hits the party or an object | world/monsters twister, swallow |
 
-TITLE.EXE has its own speaker routines (port 0x61 in its code around 1000:12xx-15xx); not covered here.
+TITLE.EXE has its own routines: see "TITLE.EXE sounds" below.
 
 ### Port (src/audio/speaker.ts)
 - `effectSpans(n, p)` replays each routine as a list of toggle intervals (the model above, unit-tested in
@@ -366,3 +365,120 @@ TITLE.EXE has its own speaker routines (port 0x61 in its code around 1000:12xx-1
   game logic depends on the wait, so the headless scenarios keep their timing.
 - The noise uses a separate seeded stream (`soundRand8` in rng.ts) so that the game rolls do not depend on
   whether the sound is on.
+- `playSpans(make, cacheKey?)` is the same queue/promise for any toggle list (used by the TITLE.EXE sounds);
+  `playEffect(n, p)` is `playSpans(() => effectSpans(n, p), key)`.
+
+### Screen inverts
+- Both are EGA.DRV entries (far table at the driver start, called through 1000:2255 with DS:8C46 = the driver's
+  load address). They set the sequencer map mask to 7 and the graphics controller to XOR (data rotate 0x18),
+  then OR 0xFF into video memory: the colour planes 0-2 are flipped, intensity is kept, so EGA colour c becomes
+  **c ^ 7** (black <-> light grey, white <-> dark grey, green <-> magenta, blue <-> brown...) and a second call
+  restores the screen.
+  - **1000:2241 -> entry 0x12** (EGA.DRV 0x0646): lines 8..183 (0xB0 lines from the line table at
+    driver 0x52 + 0x10), bytes 1..22 of each: the 176x176 map viewport at (8, 8).
+  - **1000:224B(i) -> entry 0x16** (EGA.DRV 0x06C9): 8 lines from line (i+1)*8, 15 bytes from byte 0x18: member
+    i's status line (text columns 24..38 of row i+1).
+  - (Entry 0x14, 1000:2246, EGA.DRV 0x0694, clears the viewport the same way with a plain write.)
+- Pattern: invert, sound, invert. Sites: 2241 around effect 9 in 2A91 (moongate: before leaving and after
+  arriving; for the Spirituality gate only once, the shrine screen replaces the viewport), 63B4 (spells),
+  9CBC (Reaper/Balron sleep), DA79 (healer, with the member's line), E442/E4C3/E59B (Lord British), E72C
+  (partial Avatarhood); 05CE (skull): sound+shake, invert, sound+shake, invert, sound+shake. 224B around effect
+  7 in 09D9 (fields, chest traps), 96B9/9764 (a monster hits a member; the hit tile shows meanwhile), B730 (three
+  hurt noises: orbs, fountains), DA79; around effect 6 for one member (1C53/87E2 poison) or every member, last
+  first (1C53/87E2 starving; 1584 with the shake inside; when the ship sinks 1584 inverts a third time, but the
+  status redraw 0CF7 right after wipes it). 4E45, 5A6B, 6E4A, 7631, 7732 also use 224B, without sound, to show
+  the member being asked about or the combat member whose turn it is (not part of this port's inverts).
+- Port: a layer part `invert` (src/ui/layers.ts: screen rectangles; two layers on the same area cancel like
+  the XORs) pushed by src/ui/invert.ts (`inverted(host, rects, fn)`: the rectangles are inverted while `fn`,
+  the sound, runs; `VIEWPORT_RECT`, `statusRowRect(i)`). The renderer (Renderer.setInverts / invertRect)
+  copies each area of the finished frame to a texture and draws it back through a shader that matches every
+  pixel against the 16 EGA colours (as drawn by the tile shader and, sRGB-encoded, by the UI layer) and outputs
+  its c ^ 7 partner; colours of the other tile packs are RGB-inverted. It covers the tile grid, the 3D dungeon
+  view and the UI text. The inversion lasts as long as the sound, so it is not seen when the sound is off (the
+  original's two XORs are then back to back) nor under the test clock.
+
+### Overworld events (pirates, fire breath, whirlpools, twisters)
+- End of an overworld turn (1000:1C53): if the balloon does not fly (DS:9320 = 0): 1000:7918 (whirlpools and
+  twisters), 1000:5834 -> 5712 (monsters act), 5851 (spawn), 7918 again. The port runs this after the command
+  (Game.endTurn flags it, the main loop awaits world/monsters `worldTurn`), before a pending fight.
+- **1000:5712**, per monster slot 7..0: distance |dx|+|dy| <= 1 (not whirlpool/twister) -> "Attacked by" and
+  combat (7DFE). Else:
+  - pirate ship (base tile 0x80, shown 0x80..0x83 = heading W/N/E/S, never animated by 1000:3605): distance
+    < 4 and broadside (1000:568F: heading W/E and dx = 0, or heading N/S and dy = 0) -> it fires
+    (564B with tile 0x4D); else 1000:5500 sails: it moves ahead (1000:53AF) when the party is ahead of it, else
+    1000:5443 turns towards the party (when farther than 5 squares, or 1 time in 4; otherwise it moves ahead).
+    53AF: the square ahead must be water (tile 0-1) without an object or the party (1000:4E94) and the wind
+    must allow it (1000:2A5A, as for the party's ship); blocked, it turns by sign(rand) quarters.
+  - base 0x88 (sea serpent), 0xE8 (lava lizard), >= 0xF4 (dragons, balron...): |dx| < 5, |dy| < 5 and rand & 1
+    -> fires a 0x4F bolt (564B) towards (sign dy, sign dx), diagonal included; then it moves (5062).
+- **1000:5569 / 564B** (the shot): effect 3, then up to 3 squares from the shooter by (sign dx, sign dy): the
+  party's square -> 564B draws 0x4F on the party (DS:95AE at viewport 5,5, 1000:36C7) and calls 1584; an object
+  (any slot, 0A58) -> effect 6, then a monster (slot < 8) survives 3 times in 4, any other object (ship, horse,
+  balloon...) is removed; else the projectile tile shows on the square. No message.
+- **1000:1584** (party hazard): the inverts, effect 6 and the shake (above); then on a ship (mode < 4 and
+  transport < 0x14) the hull DS:9326 loses 10, and if it was below 10 it becomes 0, "Thy Ship Sinks!" (DS:0660)
+  and the death sequence 1000:0EB1; otherwise each member, last first, 1 time in 2, if alive: 10 + rand % 15.
+- **1000:786F** (whirlpool, base 0x8C, slots 0..3) on the party's square: the whirlpool tile is drawn on the
+  party (DS:95AE = 0x8C), the party is moved to (0x7F, 0x4E), effect 11, 1584, then transport = 0x10 (ship
+  facing west) and the map is reloaded (26B6). **1000:78D1** (twister, 0x8E) on the party: effect 12 and 1584
+  four times. Both then call **1000:7821**(sound, slot): every other object on the vortex's square is removed,
+  each with the vortex's sound. 4E94 lets whirlpools and twisters move onto the party and other objects.
+- Port: world/monsters.ts (`worldTurn`, `fireAtParty`, `partyHazard`, `whirlpool`, `twister`, `swallow`;
+  pirates keep their heading in the tile's low bits); the movement of the other monsters is the port's own
+  (not 5062) as before.
+
+### Other small rules with sounds
+- **1000:794D** (from 1000:79C9, combat move off the map in a dungeon room, mode 6): the first member out sets
+  the exit column DS:96EE (when x is off the map) or row DS:96F4; a member leaving by another edge gets "All
+  must use same exit!" (DS:239E) and effect 1, and stays. Port: combat moveMember (`roomExit`).
+- **1000:44EE** (D)escend) with the balloon (transport 0x18): "Land Balloon" (DS:1867); not on grass (tile 4):
+  effect 1 and "Not Here!" (1000:11AA); already down: "Already Landed!" (DS:1875); else DS:9320 = 0 (and the
+  line of sight flag DS:9440 = 1). **1000:4477** (K)limb) with the balloon: "altitude", DS:9320 = 1, DS:9440 = 0.
+  Port: places klimb/descend (save.balloonState); the drift with the wind and the full view from the air are
+  not ported.
+- **1000:9B03** (Jinx, DS:95A4 = 'J'): in a monster's move (9CBC), a step onto another monster (59D5) shows 0x4F
+  on it, effect 6, and does rand & 0x3F damage to it (5DAB with no attacker: name and state, no XP); the move
+  ends there. Port: combat jinx() in the approach and flight steps.
+- **1000:4CC1** (Z)tats browser): keys 1-8 above the party size -> effect 1. The port has no browser: Z)tats
+  now asks the member with 1000:1287 like 4E45 (one member: answered at once), which buzzes on such a key.
+
+### TITLE.EXE sounds
+- Only four routines touch port 0x61; none programs the PIT (no port 0x42/0x43 access). There is no sound
+  flag: the title program always plays them.
+- **Timing unit**: DS:692E, measured by 1000:244E exactly like AVATAR's DS:8728 (INT 1Ch hooked with the
+  handler at 1000:257D, the same 232-cycle loop from 1000:250B, count / 1000, minimum 1); in CGA mode
+  (DS:7078 = 1) it is incremented once more. The delay 1000:02A3(n) busy-waits n*K passes unless a key is
+  pending (the port's `Keys.delay`).
+- **1000:21BF, buzz**: `mov ax,0CAh; mul [692E]`, then 16 x (out 61h with bits 0-1 cleared first, xor al,2,
+  0xCA*K passes of DEC BX/PUSHF/PUSH AX/POP AX/POPF/JNZ), port 0x61 restored. Byte-for-byte the waveform of
+  AVATAR.EXE's effect 1 (1000:1D82): 147 Hz, 54 ms. Call sites:
+  | where | when |
+  |---|---|
+  | 1000:0EAA main loop (after the menu) | any key other than R, I, J (the key's glyph is printed first) |
+  | FUN_1000_2656 line input (the name, 1000:2696) | Backspace (0x0E08 or 0x0E7F) or Left (0x4B00) with nothing typed; any key that is not Enter and not a character 0x20..0x7F, or when the buffer is full (11 characters), Escape included |
+  | FUN_1000_3030 sex prompt | every key other than M/F; the next key then ends the prompt if it is Escape, Enter or Space |
+- **Dissolve blits**, driver slot 0x0B (1000:11C2 -> table DS:03CE, entry slot*3 + mode - 1): 1000:1826
+  (mode 1, CGA), 1000:173F (mode 2, EGA), 1000:160D (mode 3); the same routines with a negative step are the
+  plain copies of slot 3 in modes 1 and 3. For each 8-pixel group that is not black (EGA: any plane byte
+  non-zero) the routine steps its generator DS:03CC/03CD (initial 0x35, 0x9B): `dl = [3CC] + 1Dh; dh = dl;
+  dl = dl + [3CD] + CF; [3CC] = dl; [3CD] = dh`; if `dl + step` carries, it flips bit 1 of port 0x61
+  (`in/xor 2/out`); `dl & 7` + step indexes the mask table DS:32D0. Port 0x61 is read at entry and restored at
+  the end. Lines are processed from the bottom one up, groups left to right. The toggle rate is set by the
+  drawing (not calibrated): about 112 8088 cycles per black group, 503 per drawn one (542 with the toggle,
+  which happens ~230 cycles in), ~270 per line. Only caller: the opening animation FUN_1000_068c, steps
+  0..0x38 back to back with no delay (twice per step when K > 4); a pending key jumps to step 0x38. Over the
+  title picture's 30x45 rectangle (657 drawn groups, 693 black) one pass is ~425,000 cycles = ~89 ms at
+  4.77 MHz (5 s for the 57 passes): a crackle whose density rises with the step (step/256 of the drawn groups
+  toggle, ~144 toggles per pass at 0x38).
+- No other sound: the story pages, the moongate, the cards, the beads, the signature and the menu text are
+  silent.
+
+### Port (src/audio/titleSounds.ts)
+- `titleBuzz()` = `playEffect(SFX.ERROR)`, awaited at the three call sites (src/intro/title.ts menu,
+  src/intro/newgame.ts name and sex prompts). The port lets Escape leave the name and sex prompts, so it does
+  not buzz there; the sex prompt buzzes on the other wrong keys.
+- `dissolveSpans` replays one pass of 1000:173F over the picture with the cycle costs above (unit-tested in
+  tests/titleSounds.test.ts with the generator written as add/adc), scaled to the port's pass time (25 ms, as
+  on a machine ~3.6x a 4.77 MHz PC); `playDissolve` queues it after each `blitDissolve` without waiting (the
+  original makes the sound while drawing, so the waits and the key skip are unchanged). Its generator only
+  advances when the sound is heard and never touches the game's random stream.

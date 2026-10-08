@@ -10,6 +10,9 @@ import type { Assets } from "./assets";
 export const SCREEN_W = 320, SCREEN_H = 200;
 export const VIEW_X = 8, VIEW_Y = 8, VIEW_TILES = 11, TILE = 16;
 
+/** A rectangle of the original 320x200 screen. */
+export interface ScreenRect { x: number; y: number; w: number; h: number }
+
 /**
  * Text rendering: the original 8x8 CHARSET glyphs, or a modern pixel font (Press Start 2P, OFL,
  * public/fonts) drawn on a higher-resolution UI layer, needed for accented languages. Control glyphs
@@ -41,6 +44,11 @@ export class Renderer {
   private uiScale = 1;
   /** Optional 3D view rendered inside the map viewport (dungeons). */
   view3d: { scene: THREE.Scene; camera: THREE.Camera } | null = null;
+  /** Screen areas whose colours are inverted after everything is drawn (setInverts). */
+  private inverts: readonly ScreenRect[] = [];
+  private invertTex: THREE.FramebufferTexture | null = null;
+  private readonly invertScene = new THREE.Scene();
+  private readonly invertQuad: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
 
   constructor(canvas: HTMLCanvasElement, readonly assets: Assets) {
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: false });
@@ -125,6 +133,9 @@ export class Renderer {
       }
     });
     gctx.putImageData(img, 0, 0);
+
+    this.invertQuad = createInvertQuad();
+    this.invertScene.add(this.invertQuad);
 
     this.resize();
     window.addEventListener("resize", () => this.resize());
@@ -258,5 +269,76 @@ export class Renderer {
       this.gl.setScissorTest(false);
       this.gl.setViewport(0, 0, size.x, size.y);
     }
+    for (const r of this.inverts) this.invertRect(r);
   }
+
+  /**
+   * Screen areas to invert at the next frames (the layers' `invert` parts). Each one is applied in
+   * turn, so an area listed twice is back to normal, like the two XORs of the original.
+   */
+  setInverts(rects: readonly ScreenRect[]) { this.inverts = rects; }
+
+  /** Copies the drawn pixels of `r` to a texture and draws them back with their colours inverted. */
+  private invertRect(r: ScreenRect) {
+    const db = this.gl.getDrawingBufferSize(new THREE.Vector2());
+    const sx = db.x / SCREEN_W, sy = db.y / SCREEN_H;
+    const x0 = Math.round(r.x * sx), x1 = Math.round((r.x + r.w) * sx);
+    const y0 = Math.round(db.y - (r.y + r.h) * sy), y1 = Math.round(db.y - r.y * sy); // GL rows start at the bottom
+    const w = x1 - x0, h = y1 - y0;
+    if (w <= 0 || h <= 0) return;
+    let tex = this.invertTex;
+    if (!tex || tex.image.width !== w || tex.image.height !== h) {
+      tex?.dispose();
+      tex = this.invertTex = new THREE.FramebufferTexture(w, h);
+      tex.magFilter = tex.minFilter = THREE.NearestFilter;
+      this.invertQuad.material.uniforms.src.value = tex;
+    }
+    this.gl.copyFramebufferToTexture(tex, new THREE.Vector2(x0, y0));
+    // black and white are the same in both colour spaces: inside the map viewport they invert to the
+    // tile shader colours, elsewhere to the UI layer ones
+    const inView = r.x >= VIEW_X && r.y >= VIEW_Y && r.x + r.w <= VIEW_X + VIEW_TILES * TILE && r.y + r.h <= VIEW_Y + VIEW_TILES * TILE;
+    this.invertQuad.material.uniforms.first.value = inView ? 0 : 16;
+    this.invertQuad.position.set(r.x + r.w / 2, r.y + r.h / 2, 5);
+    this.invertQuad.scale.set(r.w, r.h, 1);
+    this.gl.render(this.invertScene, this.camera);
+  }
+}
+
+/**
+ * The inverting quad. EGA.DRV inverts with the graphics controller in XOR mode on the colour planes 0-2
+ * only (driver entries 0x12 and 0x16): EGA colour c becomes c ^ 7 (black <-> light grey, white <->
+ * dark grey, blue <-> brown...). Each pixel is matched against the 16 EGA colours, both as drawn by
+ * the tile shader (raw) and by the UI layer (sRGB-encoded), and replaced by its partner; colours of
+ * other tile packs, which are not EGA colours, are inverted as RGB.
+ */
+function createInvertQuad(): THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial> {
+  const srgb = (v: number) => { const c = v / 255; return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055; };
+  const pal: THREE.Vector3[] = [], inv: THREE.Vector3[] = [];
+  for (const enc of [(v: number) => v / 255, srgb])
+    for (let c = 0; c < 16; c++) {
+      const [r, g, b] = EGA_PALETTE[c], [ir, ig, ib] = EGA_PALETTE[c ^ 7];
+      pal.push(new THREE.Vector3(enc(r), enc(g), enc(b)));
+      inv.push(new THREE.Vector3(enc(ir), enc(ig), enc(ib)));
+    }
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { src: { value: null }, pal: { value: pal }, inv: { value: inv }, first: { value: 0 } },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+    fragmentShader: /* glsl */ `
+      uniform sampler2D src; uniform vec3 pal[32]; uniform vec3 inv[32]; uniform int first; varying vec2 vUv;
+      void main() {
+        vec3 c = texture2D(src, vec2(vUv.x, 1.0 - vUv.y)).rgb;
+        vec3 o = vec3(1.0) - c;
+        float best = 0.002;
+        for (int k = 0; k < 32; k++) { int i = (k + first) % 32; vec3 d = c - pal[i]; float e = dot(d, d); if (e < best) { best = e; o = inv[i]; } }
+        gl_FragColor = vec4(o, 1.0);
+      }`,
+    side: THREE.DoubleSide,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+  quad.frustumCulled = false;
+  return quad;
 }

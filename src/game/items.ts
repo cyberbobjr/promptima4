@@ -17,6 +17,7 @@ import { addDungeonLight } from "./magic";
 import { endsTurn, type UseEnv } from "./commands";
 import { runCodex } from "./endgame/codex";
 import { playEffect, SFX } from "../audio/speaker";
+import { invertAreas, VIEWPORT_RECT } from "../ui/invert";
 
 /** Combat context of the U)se command being run (see UseEnv), or the defaults outside combat. */
 const NO_USE = { pos: null, altar: -1, room: false, killAll: null } as const;
@@ -169,6 +170,17 @@ async function useStone(g: Game) {
 const atAbyss = (g: Game) => g.save.location === 0 && g.px === 0xe9 && g.py === 0xe9;
 
 /** Skull 1000:05CE */
+/** 1000:05CE: three times the hit noise and a shake; the viewport is inverted (1000:2241) during the second. */
+async function skullQuake(g: Game) {
+  let restore: (() => void) | null = null;
+  try {
+    for (let k = 0; k < 3; k++) {
+      await playEffect(SFX.HIT); await shake(g);
+      if (k < 2) { if (restore) { restore(); restore = null; } else restore = invertAreas(g, [VIEWPORT_RECT]); }
+    }
+  } finally { restore?.(); }
+}
+
 async function useSkull(g: Game) {
   const s = g.save;
   if (!(s.items & 1)) { say(g, M.noneOwned); return; }
@@ -176,10 +188,10 @@ async function useSkull(g: Game) {
     say(g, M.skullCast);
     s.items |= 2;
     for (let v = 0; v < 8; v++) g.karmaInc(v, 10);
-    for (let k = 0; k < 3; k++) { await playEffect(SFX.HIT); await shake(g); }
+    await skullQuake(g);
   } else {
     say(g, M.skullAloft);
-    for (let k = 0; k < 3; k++) { await playEffect(SFX.HIT); await shake(g); }
+    await skullQuake(g);
     // every creature on the map dies except Lord British (monster slots 0..7 outdoors, all 32 slots in towns)
     const mode = gameMode(g);
     if (mode < 4) {

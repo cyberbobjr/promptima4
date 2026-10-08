@@ -6,10 +6,13 @@ import { assets } from "../assets/store";
 import { MENU_POS, type TitleData } from "./data";
 import { TITLE } from "./texts";
 import { Keys, Screen } from "./screen";
+import { playDissolve, titleBuzz } from "../audio/titleSounds";
 
 const MAP_W = 19, MAP_H = 5, MAP_Y = 0x68;
 /** Real-time pacing of the original's CPU-bound loops (not in the binary: tuned by eye). */
 const CREATURE_MS = 130, MAP_STEP_MS = 110;
+/** One pass of the dissolve (the original runs them back to back at CPU speed). */
+const DISSOLVE_MS = 25;
 
 export class Title {
   private title!: Uint8Array;
@@ -158,8 +161,10 @@ export class Title {
       await k.delay(1000);
       const masks = Uint8Array.from(this.d.dissolve);
       for (let u = 0; u < 0x39; u++) {
-        s.blitDissolve(t, 0x1e, 0x2d, 5, 0x22, 0x22, 5, k.hit ? 0x38 : u, masks);
-        if (!k.hit) await k.delay(25); else u = 0x38;
+        const step = k.hit ? 0x38 : u;
+        s.blitDissolve(t, 0x1e, 0x2d, 5, 0x22, 0x22, 5, step, masks);
+        playDissolve(t, 0x1e, 0x2d, 5, 0x22, step, DISSOLVE_MS); // 1000:173F flips the speaker as it draws
+        if (!k.hit) await k.delay(DISSOLVE_MS); else u = 0x38;
       }
       await k.delay(1000);
     } else {
@@ -243,6 +248,7 @@ export class Title {
         if (ch === "r") { view = true; break; }
         if (ch === "i") return "new";
         if (ch === "j") return "journey";
+        await titleBuzz(); // FUN_1000_0eaa: any other key (1000:21BF)
       }
     }
   }

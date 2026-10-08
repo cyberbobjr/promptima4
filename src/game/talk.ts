@@ -14,6 +14,7 @@ import { karmaDec, karmaInc, markVirtue, virtueReady, Virtue } from "./karma";
 import { TOPICS, type ConversationTurn } from "./conversation/provider";
 import { conversationProvider } from "./conversation/llm";
 import { playEffect, SFX } from "../audio/speaker";
+import { inverted, VIEWPORT_RECT } from "../ui/invert";
 
 const base = (tile: number) => tile & ~1;
 
@@ -181,9 +182,9 @@ async function lordBritish(g: Game) {
   if (s.players[0].status === "D") {
     s.players[0].status = "G";
     await say(g, me, LB.liveAgain);
-    // noise bursts, then the magic sound between two screen flashes (1000:E600)
+    // noise bursts, then the magic sound between two viewport inverts (1000:E600, 1000:2241)
     await playEffect(SFX.CAST, 0x14);
-    await playEffect(SFX.MAGIC, 0xc0);
+    await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xc0));
     healAll(g);
   }
   await say(g, LB.welcome, me);
@@ -229,7 +230,7 @@ async function lbHealth(g: Game) {
   else if (c === "N") {
     await say(g, LB.heal);
     await playEffect(SFX.CAST, 10); // 1000:E474
-    await playEffect(SFX.MAGIC, 0xc0);
+    await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xc0)); // between two viewport inverts (1000:2241)
     healAll(g);
   }
 }
@@ -250,7 +251,7 @@ async function levelUp(g: Game) {
       await say(g, p.name, LB.level);
       putNum(g, Math.floor(target / 100));
       nl(g);
-      await playEffect(SFX.MAGIC, 0xc0); // with a screen flash (1000:E575)
+      await inverted(g, [VIEWPORT_RECT], () => playEffect(SFX.MAGIC, 0xc0)); // between two viewport inverts (1000:E575, 1000:2241)
     }
   }
   await say(g, LB.ask);

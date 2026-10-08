@@ -16,6 +16,8 @@ export const MSG_CORE = defineTexts("msg.core", {
   noneLeft: 0x063b,
   badCommand: 0x0683,
   starving: 0x0698,
+  /** 1000:1584: a hazard sinks the party's ship */
+  shipSinks: 0x0660,
   pass: 0x04ca,
   dir: 0x1825,
 
@@ -58,6 +60,8 @@ export const MSG_CORE = defineTexts("msg.core", {
   altitude: 0x1841,
   toSecondFloor: 0x184b,
   descend: 0x1886,
+  landBalloon: 0x1867,
+  alreadyLanded: 0x1875,
   toFirstFloor: 0x18aa,
   talk: 0x2d68,
   /** of T)alk */

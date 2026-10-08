@@ -7,6 +7,8 @@ import type { Renderer } from "../../render/renderer";
 import { TILE, VIEW_TILES, VIEW_X, VIEW_Y } from "../../render/renderer";
 import type { Game } from "../game";
 import { sleep } from "../prompts";
+import { playEffect, SFX } from "../../audio/speaker";
+import { inverted, partyRowsRects } from "../../ui/invert";
 
 /** Game mode DS:946A: 1 overworld, 2 town, 3 dungeon, 4 combat (6 = dungeon room, reported as 4 here). */
 export function gameMode(g: Game): number {
@@ -83,6 +85,15 @@ export function drawViewTile(r: Renderer, t: number, vx: number, vy: number) {
 export async function shake(g: Game) {
   const el = g.r.gl.domElement;
   for (const dx of [-3, 3, -2, 2, -1, 1, 0]) { el.style.transform = dx ? `translate(${dx}px, ${-dx}px)` : ""; await sleep(40); }
+}
+
+/**
+ * Opening of 1000:1584 (party hazard: bombs, falling rocks, cannonballs, whirlpools, twisters): every
+ * member's status line is inverted (1000:224B, last member first), the hit noise plays, the screen
+ * shakes (1000:095E), and the lines are inverted back.
+ */
+export async function hazardFlash(g: Game) {
+  await inverted(g, partyRowsRects(g.save.members), async () => { await playEffect(SFX.HIT); await shake(g); });
 }
 
 /** Title drawn in the top frame row over the status area (FUN_1000_45D6 with row 0). */
