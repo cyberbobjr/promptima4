@@ -23,7 +23,7 @@ import { adjustKarma, karmaDec, karmaInc } from "./karma";
 import { askMember } from "./prompts";
 import type { DungeonHooks } from "./magic";
 import { rand } from "./rng";
-import { viewTiles } from "./view";
+import { viewGround, viewTiles } from "./view";
 import { runDungeon } from "./dungeon";
 import { LOCATIONS } from "./locations";
 import { Sky, checkMoongate } from "./world/sky";
@@ -386,7 +386,9 @@ export class Game {
     let viewLayer = null;
     for (let i = layers.length - 1; i >= 0 && !viewLayer; i--) if (layers[i].view || layers[i].scene3d) viewLayer = layers[i];
     r.view3d = viewLayer?.scene3d?.() ?? null;
-    r.setView(viewLayer ? viewLayer.view?.() ?? null : viewTiles(this));
+    // layered tile packs also take the plain ground (13x13) and the map position of the viewport (animation phases)
+    if (viewLayer) r.setView(viewLayer.view?.() ?? null, r.layered ? viewLayer.ground?.() ?? undefined : undefined);
+    else r.setView(viewTiles(this), r.layered ? viewGround(this) : undefined, { x: this.px - (VIEW_TILES >> 1), y: this.py - (VIEW_TILES >> 1) });
     drawStatus(this, r);
     drawLayers();
   }

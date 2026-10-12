@@ -10,7 +10,7 @@ import type { Panel } from "../dom/panels";
 import "./settings.css";
 
 /** Packs the store may hold (it cannot list folders); any other name can be typed. */
-const KNOWN_PACKS = ["original", "scale4x-derived", "scale3x-derived", "scale2x-derived"];
+const KNOWN_PACKS = ["original", "pixellab", "scale4x-derived", "scale3x-derived", "scale2x-derived"];
 const LANG_NAMES: Record<string, string> = { en: "English", fr: "Français" };
 const LLM_PROVIDERS = ["anthropic", "openai", "ollama"];
 

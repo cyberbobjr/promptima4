@@ -6,6 +6,7 @@ import type { PlayerRecord } from "../formats/save";
 import { ARMOURS, COMBAT_RULES, MONSTERS, NON_EVIL_TILES, PERSON_COMBAT, WALKABLE_TILES, WEAPONS, type MonsterDef, type MonsterRanged } from "../data/tables";
 import type { Game } from "./game";
 import { CLASS_TILES, T, animFrame } from "./tiles";
+import { ringGround } from "./view";
 import { DIR_NAMES, DIRS, type Dir } from "./maps";
 import { say } from "./prompts";
 import { MSG_FIGHT as M } from "./texts/fight";
@@ -172,7 +173,7 @@ class Combat {
 
   async run(): Promise<CombatResult> {
     const g = this.g;
-    const layer = g.layers.push({ name: "combat", view: this.view });
+    const layer = g.layers.push({ name: "combat", view: this.view, ground: () => ringGround(this.tiles) });
     try {
       for (;;) {
         for (const m of this.party) {

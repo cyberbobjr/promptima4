@@ -4,7 +4,4 @@ src-tauri/target/
 src-tauri/gen/
 .nodeenv/
 test-output/
-assets/original/
-assets/packs/*-derived/
-assets/i18n/
 .env

@@ -35,6 +35,33 @@ export function viewTiles(g: Game): number[] {
   return out;
 }
 
+/** Size of the ground grid of the layered packs: the viewport plus a ring of one cell. */
+export const GROUND = VIEW_TILES + 2;
+
+/**
+ * Plain map tiles under the viewport and a ring of one cell (13x13, row-major), without townsfolk,
+ * objects or line of sight: the dual grid of the layered tile packs (docs/TILEPACK-LAYERED.md).
+ */
+export function viewGround(g: Game): number[] {
+  const out: number[] = new Array(GROUND * GROUND);
+  const x0 = g.px - (VIEW_TILES >> 1) - 1, y0 = g.py - (VIEW_TILES >> 1) - 1;
+  for (let y = 0; y < GROUND; y++)
+    for (let x = 0; x < GROUND; x++) {
+      const t = tileAt(g.map, x0 + x, y0 + y);
+      out[y * GROUND + x] = t < 0 ? T.GRASS : t;
+    }
+  return out;
+}
+
+/** 13x13 ground from an 11x11 map (combat arenas): the ring repeats the edge cells. */
+export function ringGround(tiles: ArrayLike<number>): number[] {
+  const out: number[] = new Array(GROUND * GROUND);
+  const c = (v: number) => Math.min(VIEW_TILES - 1, Math.max(0, v - 1));
+  for (let y = 0; y < GROUND; y++)
+    for (let x = 0; x < GROUND; x++) out[y * GROUND + x] = tiles[c(y) * VIEW_TILES + c(x)];
+  return out;
+}
+
 /** Bresenham ray from the centre: a square is visible if no opaque square lies strictly between. */
 function visible(dx: number, dy: number, opaque: (dx: number, dy: number) => boolean): boolean {
   let x = 0, y = 0;

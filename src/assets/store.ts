@@ -22,8 +22,35 @@ export interface TownMap { tiles: Uint8Array; npcs: NpcDef[] }
  */
 export interface TilePack { name: string; tileSize: number; columns: number; count: number; image: string; indexed?: boolean; animations?: { kind: "scroll"; tiles: number[] }[] }
 
-/** A pack ready for the renderer: RGBA atlas of 16x16 tiles. */
-export interface LoadedPack { pack: TilePack; size: number; rgba: Uint8Array<ArrayBuffer> }
+/**
+ * A layered tile pack (format 2, docs/TILEPACK-LAYERED.md): scrolling base texture, terrain layers on a
+ * dual grid (Wang corner tiles), sprites with frames; the ids it does not cover come from `fallback`.
+ */
+export interface LayeredPackDef {
+  name: string; format: 2; tileSize: number; fallback?: string; fps: number;
+  base: { image: string; scroll?: [number, number] };
+  terrainIds: number[];
+  layers: { name: string; members: number[]; image: string; fill?: string; scroll?: [number, number]; clip?: "land" }[];
+  underlay?: Record<string, number>;
+  groundOnly?: Record<string, number>;
+  sprites: { name: string; ids: number[]; image: string; w: number; h: number; frames: number; dy?: number }[];
+}
+
+/** A layered pack with its images decoded. */
+export interface LayeredPack {
+  def: LayeredPackDef;
+  base: ImageBitmap;
+  /** Same order as def.layers; `fill` decoded when the layer has one. */
+  layers: { image: ImageBitmap; fill: ImageBitmap | null }[];
+  /** Same order as def.sprites. */
+  sprites: ImageBitmap[];
+}
+
+/**
+ * A pack ready for the renderer: RGBA atlas of 16x16 tiles. For a layered pack, `pack`/`rgba` are its
+ * fallback classic pack (used for the uncovered ids and everything outside the map views).
+ */
+export interface LoadedPack { pack: TilePack; size: number; rgba: Uint8Array<ArrayBuffer>; layered?: LayeredPack }
 export type TitleTables = Record<string, number[]>;
 export type TextCatalog = Record<string, string | string[]>;
 
@@ -83,9 +110,32 @@ export class AssetStore {
     return name === "original" ? this.json("tiles/original/pack.json") : this.jsonAt(`packs/${name}/pack.json`);
   }
 
-  /** Loads a pack's atlas as RGBA (any pack, including HD ones). */
+  /**
+   * Loads a pack's atlas as RGBA (any pack, including HD ones). A layered pack (format 2) loads its
+   * images and its fallback classic pack ("original" if that one is missing).
+   */
   async loadPack(name = "original"): Promise<LoadedPack> {
     const pack = await this.tilePack(name);
+    if ((pack as unknown as { format?: number }).format !== 2) return this.loadClassic(name, pack);
+    const def = pack as unknown as LayeredPackDef;
+    let fallback: LoadedPack;
+    try { fallback = await this.loadClassic(def.fallback ?? "original"); } catch (e) {
+      console.warn(`fallback pack "${def.fallback}" of "${name}" unavailable, using the original tiles`, e);
+      fallback = await this.loadClassic("original");
+    }
+    const img = async (rel: string) =>
+      createImageBitmap(await (await this.fetch(`packs/${name}/${rel}`)).blob(), { colorSpaceConversion: "none" });
+    const [base, layers, sprites] = await Promise.all([
+      img(def.base.image),
+      Promise.all(def.layers.map(async (l) => ({ image: await img(l.image), fill: l.fill ? await img(l.fill) : null }))),
+      Promise.all(def.sprites.map((s) => img(s.image))),
+    ]);
+    return { ...fallback, layered: { def, base, layers, sprites } };
+  }
+
+  private async loadClassic(name: string, known?: TilePack): Promise<LoadedPack> {
+    const pack = known ?? await this.tilePack(name);
+    if ((pack as unknown as { format?: number }).format === 2) throw new Error(`pack ${name}: a layered pack cannot be a fallback`);
     const path = name === "original" ? `original/tiles/original/${pack.image}` : `packs/${name}/${pack.image}`;
     const res = await this.fetch(path);
     const bmp = await createImageBitmap(await res.blob(), { premultiplyAlpha: "none", colorSpaceConversion: "none" });

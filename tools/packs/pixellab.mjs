@@ -25,7 +25,8 @@ export async function call(method, route, body) {
       body: body ? JSON.stringify(body) : undefined,
     });
     text = await res.text();
-    if (res.status !== 429 || tries >= 20) break;
+    // paid plans also run one job at a time: a queued script may wait for another one (~20 min max)
+    if (res.status !== 429 || tries >= 240) break;
     await new Promise((r) => setTimeout(r, 5000));
   }
   if (!res.ok) throw new Error(`${method} ${route}: HTTP ${res.status} ${text.slice(0, 500)}`);

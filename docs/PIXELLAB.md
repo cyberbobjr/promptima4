@@ -148,6 +148,20 @@ nothing. For B:
 6. Review sheet next to the original and Scale4x, regenerate rejects, assemble `assets/packs/<name>-derived/`
    (pack.json + atlas; reuse the assembly code at the end of `pixellab-pilot.mjs`).
 
+## Building the pack
+
+`node tools/packs/build-pixellab.mjs` assembles the layered pack `assets/packs/pixellab/` (format 2,
+[TILEPACK-LAYERED.md](TILEPACK-LAYERED.md); versioned, the art is not derived from the original game) from the
+generated art in `test-output/pixellab/sample/`, without any API call. The choices (terrain and place candidates)
+are read from `tools/packs/pixellab-picks.json` (falls back to `picks.json` in the sample directory). Terrain
+layers come from the transition sets `tileset-<key>/` (sea ← deep, shallows, land ← coast, then swamp, scrub,
+hills, forest, mountains clipped to the land), the lower terrain made transparent by `pixellab-mask.mjs` (the
+same masking as the mock scene of `pixellab-sample.mjs scene`). Sprites: the four picked places, and each
+creature found on disk — the animation frames `anim/<name>/1..N.png` if present, else the still
+`character-<name>-south.png`; a creature with neither is left out and keeps the classic tile. A creature's `dy`
+puts the lowest opaque row of its frames 2 px above the cell bottom (places: 0). The output directory is rebuilt
+on each run: re-run it after generating or animating more characters.
+
 ## Cost estimate
 
 A: ≈ 256 bitforge calls + retries ≈ 300–400 generations. B: terrain set and transitions with Pro tools

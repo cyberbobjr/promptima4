@@ -1,0 +1,211 @@
+{
+ "name": "PixelLab",
+ "format": 2,
+ "tileSize": 32,
+ "fallback": "scale4x-derived",
+ "fps": 6,
+ "base": {
+  "image": "terrain/base.png",
+  "scroll": [1, 0]
+ },
+ "terrainIds": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+ "layers": [
+  {
+   "name": "sea",
+   "members": [1, 2, 3, 4, 5, 6, 7, 8],
+   "image": "terrain/sea.png",
+   "fill": "terrain/sea-fill.png",
+   "scroll": [1, 0]
+  },
+  {
+   "name": "shallows",
+   "members": [2],
+   "image": "terrain/shallows.png",
+   "fill": "terrain/shallows-fill.png",
+   "scroll": [1, 0]
+  },
+  {
+   "name": "land",
+   "members": [3, 4, 5, 6, 7, 8],
+   "image": "terrain/land.png"
+  },
+  {
+   "name": "swamp",
+   "members": [3],
+   "image": "terrain/swamp.png",
+   "clip": "land"
+  },
+  {
+   "name": "scrub",
+   "members": [5],
+   "image": "terrain/scrub.png",
+   "clip": "land"
+  },
+  {
+   "name": "hills",
+   "members": [7],
+   "image": "terrain/hills.png",
+   "clip": "land"
+  },
+  {
+   "name": "forest",
+   "members": [6],
+   "image": "terrain/forest.png",
+   "clip": "land"
+  },
+  {
+   "name": "mountains",
+   "members": [8],
+   "image": "terrain/mountains.png",
+   "clip": "land"
+  }
+ ],
+ "underlay": {
+  "9": 8,
+  "10": 4,
+  "11": 4,
+  "14": 4,
+  "30": 4
+ },
+ "groundOnly": {
+  "13": 4,
+  "15": 4
+ },
+ "sprites": [
+  {
+   "name": "dungeon",
+   "ids": [9],
+   "image": "sprites/dungeon.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "town",
+   "ids": [10],
+   "image": "sprites/town.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "castle",
+   "ids": [11, 14],
+   "image": "sprites/castle.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "shrine",
+   "ids": [30],
+   "image": "sprites/shrine.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "avatar",
+   "ids": [31],
+   "image": "sprites/avatar.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "mage",
+   "ids": [32, 33],
+   "image": "sprites/mage.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "bard",
+   "ids": [34, 35],
+   "image": "sprites/bard.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": -1
+  },
+  {
+   "name": "fighter",
+   "ids": [36, 37],
+   "image": "sprites/fighter.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": -1
+  },
+  {
+   "name": "druid",
+   "ids": [38, 39],
+   "image": "sprites/druid.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "tinker",
+   "ids": [40, 41],
+   "image": "sprites/tinker.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": -1
+  },
+  {
+   "name": "paladin",
+   "ids": [42, 43],
+   "image": "sprites/paladin.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": -1
+  },
+  {
+   "name": "ranger",
+   "ids": [44, 45],
+   "image": "sprites/ranger.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": -1
+  },
+  {
+   "name": "shepherd",
+   "ids": [46, 47],
+   "image": "sprites/shepherd.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "guard",
+   "ids": [80, 81],
+   "image": "sprites/guard.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "orc",
+   "ids": [192, 193, 194, 195],
+   "image": "sprites/orc.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  }
+ ]
+}

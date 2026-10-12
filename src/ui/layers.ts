@@ -20,6 +20,11 @@ export interface Layer {
   fullscreen?: boolean;
   /** Viewport contents: 121 tile ids (-1 = black), or null to hide the tile grid. */
   view?: () => number[] | null;
+  /**
+   * Layered tile packs only: 13x13 plain map tiles under the viewport and a ring of one cell (see
+   * Renderer.setView). Without it the renderer derives the ground from `view`.
+   */
+  ground?: () => number[] | null;
   /** Three.js scene drawn in the viewport (first-person dungeon). */
   scene3d?: () => { scene: Scene; camera: Camera } | null;
   /** Replaces the party list. */

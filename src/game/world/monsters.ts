@@ -14,7 +14,7 @@ import { MSG_CORE } from "../texts/core";
 import { playEffect, SFX } from "../../audio/speaker";
 import { drawViewTile, hazardFlash } from "../endgame/ui";
 import { sleep } from "../prompts";
-import { viewTiles } from "../view";
+import { viewGround, viewTiles } from "../view";
 import { invertAreas, partyRowsRects } from "../../ui/invert";
 
 const wrap = (v: number) => ((v % 256) + 256) % 256;
@@ -190,7 +190,8 @@ async function fireAtParty(g: Game, x: number, y: number, sx: number, sy: number
 async function withCentreTile<R>(g: Game, tile: number, fn: () => Promise<R>): Promise<R> {
   const view = viewTiles(g);
   view[60] = tile;
-  const layer = g.layers.push({ name: "centre", view: () => view });
+  const ground = g.r.layered ? viewGround(g) : undefined;
+  const layer = g.layers.push({ name: "centre", view: () => view, ground: () => ground ?? null });
   try { return await fn(); } finally { layer.remove(); }
 }
 

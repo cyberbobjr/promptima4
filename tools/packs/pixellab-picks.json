@@ -1,0 +1,6 @@
+{
+  "_note": "Chosen candidates (index in sprite-<name>/ and terrain-1/). Towns: no moat (no town on the world map is surrounded by water).",
+  "coast": "standard (sand beach), user choice",
+  "sprites": { "town": 0, "castle": 1, "shrine": 0, "dungeon": 0 },
+  "terrain": { "0": 0, "1": 3, "2": 4, "3": 7, "4": 8, "5": 9, "6": 10, "7": 13, "8": 15 }
+}

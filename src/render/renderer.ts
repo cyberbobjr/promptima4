@@ -1,11 +1,14 @@
 // three.js presentation layer. Everything is laid out in the original 320x200 screen space:
 // - a 2D UI canvas (frame, text, status) uploaded as a texture on top,
-// - an instanced 11x11 tile grid for the map views (towns, overworld, combat),
+// - an instanced 11x11 tile grid for the map views (towns, overworld, combat), or with a layered pack
+//   (format 2, src/render/layered.ts) one quad showing the viewport composited on a canvas,
 // - an optional perspective scene drawn inside the map viewport (dungeons).
 import * as THREE from "three";
 import { EGA_PALETTE } from "../formats/ega";
 import { SCROLL_TILES } from "../game/tiles";
 import type { Assets } from "./assets";
+import { LayeredView } from "./layered";
+import { now } from "../game/clock";
 
 export const SCREEN_W = 320, SCREEN_H = 200;
 export const VIEW_X = 8, VIEW_Y = 8, VIEW_TILES = 11, TILE = 16;
@@ -49,6 +52,15 @@ export class Renderer {
   private invertTex: THREE.FramebufferTexture | null = null;
   private readonly invertScene = new THREE.Scene();
   private readonly invertQuad: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
+  /** Layered tile pack (format 2): the viewport composited on a canvas, replacing the tile grid. */
+  private readonly layeredView: LayeredView | null = null;
+  private layeredMesh: THREE.Mesh | null = null;
+  private layeredTex: THREE.CanvasTexture | null = null;
+  /** Fallback atlas as a canvas fed from atlasData (animateTiles re-puts the scroll tiles). */
+  private atlasCanvas: CanvasRenderingContext2D | null = null;
+  private atlasImage: ImageData | null = null;
+  /** Last view given to setView (layered), its ground and origin, and the drawn animation frame. */
+  private readonly lv = { tiles: new Int16Array(121), ground: new Int16Array(169), x0: 0, frame: -1, dirty: true, fallback: false };
 
   constructor(canvas: HTMLCanvasElement, readonly assets: Assets) {
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: false });
@@ -99,6 +111,7 @@ export class Renderer {
       this.tileAttr.setX(i, -1);
     }
     this.scene.add(this.mapMesh);
+    if (pack.layered) this.layeredView = this.createLayered(pack.layered);
 
     // UI layer.
     const uiCanvas = document.createElement("canvas");
@@ -161,17 +174,82 @@ export class Renderer {
       p.set(last, 0);
     }
     this.atlas.needsUpdate = true;
+    if (this.atlasCanvas && this.atlasImage) {
+      for (const t of this.scrollTiles) this.atlasCanvas.putImageData(this.atlasImage, 0, 0, (t % 16) * n, (t >> 4) * n, n, n);
+      if (this.lv.fallback) this.lv.dirty = true;
+    }
   }
 
-  /** 121 tile ids in row-major order; -1 renders black. null hides the grid. */
-  setView(tiles: ArrayLike<number> | null) {
+  /** True with a layered tile pack: setView then uses the ground (13x13) and the origin. */
+  get layered(): boolean { return this.layeredView !== null; }
+
+  /**
+   * 121 tile ids in row-major order; -1 renders black. null hides the grid. Layered packs only:
+   * `ground` = 13x13 plain map tiles under the viewport and a ring of one cell (derived from `tiles`
+   * when absent), `origin` = map position of the viewport's first cell (animation phases).
+   */
+  setView(tiles: ArrayLike<number> | null, ground?: ArrayLike<number>, origin?: { x: number; y: number }) {
+    if (this.layeredView && this.layeredMesh) {
+      this.layeredMesh.visible = tiles !== null;
+      if (!tiles) return;
+      const g = ground ?? LayeredView.derive(tiles, this.layeredView.pack);
+      const lv = this.lv, x0 = origin?.x ?? 0;
+      if (lv.x0 !== x0) { lv.x0 = x0; lv.dirty = true; }
+      for (let i = 0; i < 121; i++) if (lv.tiles[i] !== tiles[i]) { lv.tiles[i] = tiles[i]; lv.dirty = true; }
+      for (let i = 0; i < 169; i++) if (lv.ground[i] !== g[i]) { lv.ground[i] = g[i]; lv.dirty = true; }
+      return;
+    }
     this.mapMesh.visible = tiles !== null;
     if (!tiles) return;
     for (let i = 0; i < VIEW_TILES * VIEW_TILES; i++) this.tileAttr.setX(i, tiles[i]);
     this.tileAttr.needsUpdate = true;
   }
 
-  /** Selects the text font; the modern one renders the UI layer at a higher resolution. */
+  /** The quad showing the layered viewport canvas (raw colours, like the tile shader). */
+  private createLayered(layered: NonNullable<Assets["pack"]["layered"]>): LayeredView {
+    const size = this.assets.pack.size;
+    const atlas = document.createElement("canvas");
+    atlas.width = atlas.height = size;
+    this.atlasCanvas = atlas.getContext("2d")!;
+    this.atlasImage = new ImageData(new Uint8ClampedArray(this.atlasData.buffer, this.atlasData.byteOffset, this.atlasData.byteLength), size, size);
+    this.atlasCanvas.putImageData(this.atlasImage, 0, 0);
+    const view = new LayeredView(layered, atlas, this.tileSize);
+    const tex = this.layeredTex = new THREE.CanvasTexture(view.canvas);
+    tex.flipY = false;
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.LinearFilter; // the canvas has more pixels than the viewport on small screens
+    tex.generateMipmaps = false;
+    tex.colorSpace = THREE.NoColorSpace;
+    const side = VIEW_TILES * TILE;
+    const mesh = this.layeredMesh = new THREE.Mesh(new THREE.PlaneGeometry(side, side), new THREE.ShaderMaterial({
+      uniforms: { map: { value: tex } },
+      vertexShader: /* glsl */ `
+        varying vec2 vUv;
+        void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+      fragmentShader: /* glsl */ `
+        uniform sampler2D map; varying vec2 vUv;
+        void main() { gl_FragColor = vec4(texture2D(map, vUv).rgb, 1.0); }`,
+      side: THREE.DoubleSide,
+    }));
+    mesh.position.set(VIEW_X + side / 2, VIEW_Y + side / 2, 0);
+    mesh.visible = false;
+    this.mapMesh.visible = false;
+    this.scene.add(mesh);
+    return view;
+  }
+
+  /** Recomposites the layered viewport when the view changed or the pack's animation frame advanced. */
+  private updateLayered() {
+    const view = this.layeredView, lv = this.lv;
+    if (!view || !this.layeredMesh?.visible) return;
+    const frame = Math.floor(now() / 1000 * view.pack.def.fps);
+    if (frame === lv.frame && !lv.dirty) return;
+    lv.frame = frame; lv.dirty = false;
+    lv.fallback = view.draw(lv.tiles, lv.ground, frame, lv.x0);
+    this.layeredTex!.needsUpdate = true;
+  }
+
+  /** Selects the text font;the modern one renders the UI layer at a higher resolution. */
   setFont(mode: FontMode) {
     this.fontMode = mode;
     const scale = mode === "modern" ? MODERN_SCALE : 1;
@@ -255,6 +333,7 @@ export class Renderer {
     this.gl.setScissorTest(false);
     this.gl.setViewport(0, 0, size.x, size.y);
     this.gl.clear();
+    this.updateLayered();
     this.gl.render(this.scene, this.camera);
     if (this.view3d) {
       // Map viewport in GL coordinates (origin bottom-left), drawn over the (hidden) tile grid.
