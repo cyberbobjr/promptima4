@@ -121,73 +121,73 @@
    "name": "mage",
    "ids": [32, 33],
    "image": "sprites/mage.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": 0
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
   },
   {
    "name": "bard",
    "ids": [34, 35],
    "image": "sprites/bard.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": -1
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
   },
   {
    "name": "fighter",
    "ids": [36, 37],
    "image": "sprites/fighter.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": -1
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 3
   },
   {
    "name": "druid",
    "ids": [38, 39],
    "image": "sprites/druid.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": 0
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
   },
   {
    "name": "tinker",
    "ids": [40, 41],
    "image": "sprites/tinker.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": -1
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
   },
   {
    "name": "paladin",
    "ids": [42, 43],
    "image": "sprites/paladin.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": -1
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
   },
   {
    "name": "ranger",
    "ids": [44, 45],
    "image": "sprites/ranger.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": -1
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
   },
   {
    "name": "shepherd",
    "ids": [46, 47],
    "image": "sprites/shepherd.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": 0
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
   },
   {
    "name": "guard",
@@ -197,6 +197,168 @@
    "h": 44,
    "frames": 8,
    "dy": 5
+  },
+  {
+   "name": "merchant",
+   "ids": [82, 83],
+   "image": "sprites/merchant.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "minstrel",
+   "ids": [84, 85],
+   "image": "sprites/minstrel.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "jester",
+   "ids": [86, 87],
+   "image": "sprites/jester.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "beggar",
+   "ids": [88, 89],
+   "image": "sprites/beggar.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "child",
+   "ids": [90, 91],
+   "image": "sprites/child.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "bull",
+   "ids": [92, 93],
+   "image": "sprites/bull.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "king",
+   "ids": [94, 95],
+   "image": "sprites/king.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "nixie",
+   "ids": [132, 133],
+   "image": "sprites/nixie.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "squid",
+   "ids": [134, 135],
+   "image": "sprites/squid.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "seaserpent",
+   "ids": [136, 137],
+   "image": "sprites/seaserpent.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "seahorse",
+   "ids": [138, 139],
+   "image": "sprites/seahorse.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "whirlpool",
+   "ids": [140, 141],
+   "image": "sprites/whirlpool.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "twister",
+   "ids": [142, 143],
+   "image": "sprites/twister.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "rat",
+   "ids": [144, 145, 146, 147],
+   "image": "sprites/rat.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
+  },
+  {
+   "name": "bat",
+   "ids": [148, 149, 150, 151],
+   "image": "sprites/bat.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 7
+  },
+  {
+   "name": "spider",
+   "ids": [152, 153, 154, 155],
+   "image": "sprites/spider.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 8
+  },
+  {
+   "name": "ghost",
+   "ids": [156, 157, 158, 159],
+   "image": "sprites/ghost.png",
+   "w": 36,
+   "h": 36,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "slime",
+   "ids": [160, 161, 162, 163],
+   "image": "sprites/slime.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 2
   },
   {
    "name": "orc",
