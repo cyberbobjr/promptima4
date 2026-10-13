@@ -1,11 +1,15 @@
-// PixelLab sample for art direction B ("2026" redesign, see docs/PIXELLAB.md): a coherent terrain set and
-// transparent sprites, composed into a mock 11x11 world view, before committing to a whole pack.
+// PixelLab generation of the art of the pixellab pack (modern 32 px redesign): the prompts and API settings of
+// the style, one command per kind of asset. Commands and costs: docs/PIXELLAB.md.
 //
 //   node tools/packs/pixellab-sample.mjs terrain [seed]     terrain set (create-tiles-pro)
+//   node tools/packs/pixellab-sample.mjs tileset <key|all>  Wang transition sets (create-tileset)
+//   node tools/packs/pixellab-sample.mjs characters         characters and monsters (create-character-v3)
+//   node tools/packs/pixellab-sample.mjs animate <name|all> idle animations
 //   node tools/packs/pixellab-sample.mjs sprite <name>      64 candidates of one sprite (generate-image-v2)
+//   node tools/packs/pixellab-sample.mjs tiles <set>        opaque tile set (create-tiles-pro)
 //   node tools/packs/pixellab-sample.mjs headless [seed]    headless brute: inpainted stump + idle animation
 //
-// Raw responses and images go to test-output/pixellab/sample/ (local).
+// Raw responses and images go to test-output/pixellab/sample/ (local); build-pixellab.mjs assembles the pack.
 import fs from "node:fs";
 import path from "node:path";
 import { b64, call, save, waitJob } from "./pixellab.mjs";
