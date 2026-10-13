@@ -38,3 +38,11 @@
   .help-table th { white-space: normal; }
   .help-cmd-line { grid-template-columns: 1fr; gap: 2px; }
 }
+
+/* spells tab */
+.help-scroll { overflow-x: auto; }
+.help-spells th small.help-spell-desc { display: block; margin-top: 4px; font-size: 9px; color: var(--ui-dim); font-weight: normal; line-height: 1.5; }
+.help-spells .help-num { text-align: right; font-variant-numeric: tabular-nums; }
+.help-reagents { list-style: none; margin: 0; padding: 0; font-size: 9px; line-height: 1.6; white-space: nowrap; }
+.help-sctx-any { color: #8ff0c0; } .help-sctx-combat { color: #ff9aa8; } .help-sctx-outdoors { color: #9fd0ff; }
+.help-sctx-dungeon { color: #ffcf7a; } .help-sctx-notCombat { color: #d6b3ff; }

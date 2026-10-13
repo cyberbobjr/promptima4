@@ -1,7 +1,8 @@
-// Help panel: four sections in tabs (Left/Right or 1-4 to switch, Up/Down/PageUp/PageDown to scroll):
-// the commands of the current mode, every command by context, the controls (keyboard, mouse, touch)
-// and a short spoiler-light guide to the quest. Command lists come from the registry plus the keys the
+// Help panel: five sections in tabs (Left/Right or 1-5 to switch, Up/Down/PageUp/PageDown to scroll):
+// the commands of the current mode, every command by context, the spells with their reagents, the controls
+// (keyboard, mouse, touch) and a short spoiler-light guide to the quest. Command lists come from the registry plus the keys the
 // dungeon and combat loops handle themselves (the same list as the command bar).
+import { REAGENTS, SPELLS } from "../../data/tables";
 import type { CommandContext } from "../../game/commands";
 import type { Game } from "../../game/game";
 import { t } from "../../i18n/i18n";
@@ -11,7 +12,7 @@ import type { Panel } from "../dom/panels";
 import "./help.css";
 
 const CONTEXTS: readonly CommandContext[] = ["world", "town", "dungeon", "combat"];
-const TABS = ["here", "all", "controls", "quest"] as const;
+const TABS = ["here", "all", "spells", "controls", "quest"] as const;
 type Tab = (typeof TABS)[number];
 
 /** Commands whose description changes in some contexts (key "help.desc.<id>.<ctx>"). */
@@ -64,6 +65,29 @@ function allSection(g: Game): HTMLElement {
   return h("div", {}, h("p", { class: "help-lead" }, t("help.allIntro")), h("ul", { class: "help-cmds" }, items));
 }
 
+/**
+ * The 26 spells: letter, name, MP, where they work, the reagents of their mixture (by their letter for M)ix:
+ * bit 0x80 >> i of the recipe = reagent i) and the mixtures prepared. Descriptions written for this port.
+ */
+function spellsSection(g: Game): HTMLElement {
+  const rows = SPELLS.map((sp, i) => {
+    const reagents = REAGENTS.map((name, r) => (sp.reagentMask & (0x80 >> r) ? `${String.fromCharCode(65 + r)} ${name}` : null)).filter((x): x is string => !!x);
+    const have = g.save?.mixtures[i] ?? 0;
+    return h("tr", {},
+      h("td", {}, kbd(sp.letter)),
+      h("th", { scope: "row" }, sp.name, h("small", { class: "help-spell-desc" }, t(`help.spell.${sp.letter}`))),
+      h("td", { class: "help-num" }, String(sp.mp)),
+      h("td", {}, h("span", { class: `help-tag help-sctx-${sp.context}` }, t(`help.sctx.${sp.context}`))),
+      h("td", {}, h("ul", { class: "help-reagents" }, reagents.map((r) => h("li", {}, r)))),
+      h("td", { class: "help-num" }, g.save ? String(have) : "-"));
+  });
+  return h("div", {},
+    h("p", { class: "help-lead" }, t("help.spellsIntro")),
+    h("div", { class: "help-scroll" }, h("table", { class: "help-table help-spells" },
+      h("thead", {}, h("tr", {}, ["help.sp.key", "help.sp.name", "help.sp.mp", "help.sp.where", "help.sp.reagents", "help.sp.have"].map((k) => h("th", { scope: "col" }, t(k))))),
+      h("tbody", {}, rows))));
+}
+
 function controlsSection(): HTMLElement {
   const dl = (rows: [Node | string, string][]) =>
     h("dl", { class: "help-dl" }, rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, v)]));
@@ -114,7 +138,7 @@ export function createHelpPanel(g: Game): Panel {
       if (on && focus) b.focus();
     });
     if (!content) return;
-    content.replaceChildren(tab === "here" ? hereSection(g) : tab === "all" ? allSection(g) : tab === "controls" ? controlsSection() : questSection());
+    content.replaceChildren(tab === "here" ? hereSection(g) : tab === "all" ? allSection(g) : tab === "spells" ? spellsSection(g) : tab === "controls" ? controlsSection() : questSection());
     content.scrollTop = 0;
   };
 
@@ -136,7 +160,7 @@ export function createHelpPanel(g: Game): Panel {
       const i = TABS.indexOf(tab);
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") { show(TABS[(i + (e.key === "ArrowLeft" ? TABS.length - 1 : 1)) % TABS.length], true); return true; }
       if (e.key === "Home" || e.key === "End") { show(e.key === "Home" ? TABS[0] : TABS[TABS.length - 1], true); return true; }
-      if (/^[1-4]$/.test(e.key)) { show(TABS[+e.key - 1], true); return true; }
+      if (/^[1-5]$/.test(e.key)) { show(TABS[+e.key - 1], true); return true; }
       if (!content) return false;
       const step = { ArrowUp: -40, ArrowDown: 40, PageUp: -content.clientHeight * 0.9, PageDown: content.clientHeight * 0.9 }[e.key];
       if (step === undefined) return false;
