@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "lang": {
     "game": "en",
     "ui": "en"
@@ -8,7 +8,7 @@
     "dir": ""
   },
   "tiles": {
-    "pack": "original"
+    "pack": "pixellab"
   },
   "display": {
     "font": "auto",

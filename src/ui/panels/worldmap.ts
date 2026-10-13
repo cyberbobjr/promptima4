@@ -46,9 +46,10 @@ function atlas16(pack: LoadedPack): Uint32Array {
   return new Uint32Array(ctx.getImageData(0, 0, dst.width, dst.height).data.buffer);
 }
 
-function mapImages(pack: LoadedPack, tiles: Uint8Array): MapImages {
+function mapImages(pack: LoadedPack, tiles: Uint8Array, layered: Uint32Array | null): MapImages {
   if (cache && cache.pack === pack && cache.tiles === tiles) return cache.images;
-  const atlas = atlas16(pack);
+  // a layered pack draws its own tiles (its classic atlas is only the fallback of uncovered ids)
+  const atlas = layered ?? atlas16(pack);
   const aw = 16 * BIG, size = W * BIG;
   const img = new ImageData(size, size);
   const dst = new Uint32Array(img.data.buffer);
@@ -121,7 +122,8 @@ function mount(g: Game, body: HTMLElement): { dispose: () => void; onKey: (e: Ke
   const list = h("div", { class: "wm-list" });
   body.append(h("div", { class: "wm" }, viewEl, h("aside", { class: "wm-side" }, h("h3", {}, t("map.places")), count, list)));
 
-  const images = mapImages(g.r.assets.pack, g.world.tiles);
+  const sameMap = cache && cache.pack === g.r.assets.pack && cache.tiles === g.world.tiles;
+  const images = mapImages(g.r.assets.pack, g.world.tiles, sameMap ? null : g.r.layeredAtlas(BIG));
   const ctx = cv.getContext("2d")!;
   let vw = 1, vh = 1, dpr = 1;
   let ppt = lastPpt || 8, cx = 128, cy = 128;

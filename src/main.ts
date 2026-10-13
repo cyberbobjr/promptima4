@@ -29,11 +29,12 @@ async function main() {
   setUiLang(cfg.lang.ui);
   if (!(await store.manifest())) throw new Error(t("app.notExtracted", { dir: "C:\\Program Files\\GOG Galaxy\\Games\\Ultima 4" }));
   await loadGameLang(store, cfg.lang.game);
-  const assets = await loadAssets(new URLSearchParams(location.search).get("pack") ?? cfg.tiles.pack);
+  const packName = new URLSearchParams(location.search).get("pack") ?? cfg.tiles.pack;
+  const assets = await loadAssets(packName);
   const renderer = new Renderer(canvas, assets);
   // "auto": the original font for English with the original tiles, the modern one otherwise (accents, HD)
   const font: FontMode = cfg.display.font !== "auto" ? cfg.display.font
-    : cfg.lang.game === "en" && cfg.lang.ui === "en" && cfg.tiles.pack === "original" ? "original" : "modern";
+    : cfg.lang.game === "en" && cfg.lang.ui === "en" && packName === "original" ? "original" : "modern";
   if (font === "modern") {
     const face = new FontFace(MODERN_FONT, `url(${import.meta.env.BASE_URL}fonts/PressStart2P-Regular.ttf)`);
     document.fonts.add(await face.load());

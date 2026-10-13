@@ -63,7 +63,7 @@ class DungeonRun {
   private done = false;
 
   constructor(private readonly g: Game) {
-    this.view = new DungeonView(g.r.assets);
+    this.view = new DungeonView(g.r.assets, g.r.packArt());
   }
 
   private get s() { return this.g.save; }

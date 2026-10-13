@@ -159,8 +159,11 @@ for (const [name, ids] of Object.entries(IDS)) {
 
 // --- objects (transports, places, things on floors): one sprite per SHAPES id, from a picked candidate
 /** A candidate picked in picks.sprites: an index in sprite-<name>/, or "<seed>/<index>" for sprite-<name>-<seed>/. */
+/** A picked candidate: an index in sprite-<name>/, "<seed>/<index>" in sprite-<name>-<seed>/, or "<other>:<index>" in sprite-<other>/. */
 const picked = (name) => {
-  const p = String(picks.sprites[name]), [dir, i] = p.includes("/") ? p.split("/") : ["", p];
+  const p = String(picks.sprites[name]);
+  if (p.includes(":")) { const [other, i] = p.split(":"); return read(path.join(SRC, `sprite-${other}`, `${i}.png`)); }
+  const [dir, i] = p.includes("/") ? p.split("/") : ["", p];
   return read(path.join(SRC, `sprite-${name}${dir ? `-${dir}` : ""}`, `${i}.png`));
 };
 const blank = (w = SIZE, h = SIZE) => new PNG({ width: w, height: h });
@@ -244,6 +247,10 @@ const OBJECTS = [
   ["ladder-down", [0x1c], "ladder-down", null, 62],
   ["mast", [0x35], "mast", null, 63],
   ["wheel", [0x36], "wheel", null, 63],
+  // combat effects, over the square they hit; the missile is a small spark (an arrow would point one way only)
+  ["missile", [0x4d], "missile", null, 4],
+  ["magic-flash", [0x4e], "magic-flash", null, 4],
+  ["hit-flash", [0x4f], "hit-flash", null, 4],
 ];
 const underlay = { 9: 8, 10: 4, 11: 4, 14: 4, 30: 4 };
 const objects = [];
@@ -287,7 +294,8 @@ const pack = {
   name: "PixelLab",
   format: 2,
   tileSize: SIZE,
-  fallback: "scale4x-derived",
+  // every id is drawn by the pack (the signs by the engine): the classic atlas behind it is never shown
+  fallback: "original",
   fps: 6,
   base: { image: "terrain/base.png", scroll: [1, 0] },
   terrainIds: [...range(0, 9), LAVA],

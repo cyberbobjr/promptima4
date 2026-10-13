@@ -74,8 +74,23 @@ async function readStored(): Promise<unknown> {
   }
 }
 
+/**
+ * Older stored settings brought up to date. Version 2 made the PixelLab pack the default: a version 1 file that
+ * still has the former default ("original") gets the new one; any later choice is kept.
+ */
+export function migrateConfig(raw: unknown): unknown {
+  if (!isPlain(raw)) return raw;
+  const out: Plain = { ...raw };
+  if (((out.version as number) ?? 1) < 2) {
+    const tiles = isPlain(out.tiles) ? out.tiles : {};
+    if (tiles.pack === "original") out.tiles = { ...tiles, pack: DEFAULT_CONFIG.tiles.pack };
+    out.version = 2;
+  }
+  return out;
+}
+
 export async function loadConfig(): Promise<Config> {
-  stored = mergeConfig(structuredClone(DEFAULT_CONFIG), await readStored());
+  stored = mergeConfig(structuredClone(DEFAULT_CONFIG), migrateConfig(await readStored()));
   current = structuredClone(stored);
   // Dev/tests: ?lang=fr, ?debug override the stored values for this session only.
   if (typeof location !== "undefined") {

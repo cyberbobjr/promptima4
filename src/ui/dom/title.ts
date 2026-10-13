@@ -9,6 +9,7 @@ import type { Game } from "../../game/game";
 import type { Key } from "../../game/input";
 import { t } from "../../i18n/i18n";
 import { h } from "./dom";
+import { loadEditionFonts } from "../../render/fonts";
 import "./title.css";
 
 export type TitleChoice = "journey" | "new";
@@ -20,18 +21,6 @@ export interface ModernTitle {
   hide(): void;
 }
 
-const FONTS: [string, string, FontFaceDescriptors?][] = [
-  ["Pirata One", "fonts/PirataOne-Regular.woff2"],
-  ["Dancing Script", "fonts/DancingScript-Bold.woff2", { weight: "700" }],
-];
-let fontsLoaded: Promise<unknown> | null = null;
-function loadFonts() {
-  fontsLoaded ??= Promise.all(FONTS.map(async ([family, file, desc]) => {
-    try { document.fonts.add(await new FontFace(family, `url(${import.meta.env.BASE_URL}${file})`, desc).load()); }
-    catch (e) { console.warn(`title font ${family} unavailable`, e); }
-  }));
-  return fontsLoaded;
-}
 
 /** Links to the legal pages (public/legal/, in French), opened in a new tab so that the game stays. */
 export function legalLinks(cls: string) {
@@ -143,7 +132,7 @@ export function createModernTitle(overlay: HTMLElement, g: Game): ModernTitle {
 
   return {
     async run(withOpening) {
-      await loadFonts();
+      await loadEditionFonts();
       for (let open = withOpening; ;) {
         show(open);
         if (open) await opening();

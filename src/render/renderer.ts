@@ -13,6 +13,12 @@ import { now } from "../game/clock";
 export const SCREEN_W = 320, SCREEN_H = 200;
 export const VIEW_X = 8, VIEW_Y = 8, VIEW_TILES = 11, TILE = 16;
 
+/** Pictures of a layered pack used outside the map view (see Renderer.packArt). */
+export interface PackArt {
+  sprite(t: number): HTMLCanvasElement | null;
+  tile(t: number): HTMLCanvasElement | null;
+}
+
 /** A rectangle of the original 320x200 screen. */
 export interface ScreenRect { x: number; y: number; w: number; h: number }
 
@@ -191,6 +197,41 @@ export class Renderer {
     }
   }
 
+  /**
+   * Pictures of a layered pack for the 3D dungeon (src/dungeon/view.ts): a creature's or object's sprite (first
+   * frame) and an opaque tile (fields, lava); null without a layered pack or for an id it does not cover.
+   */
+  packArt(): PackArt | null {
+    const view = this.layeredView;
+    if (!view) return null;
+    return {
+      sprite: (t) => {
+        const sp = view.spriteOf(t);
+        if (!sp) return null;
+        const c = document.createElement("canvas");
+        c.width = sp.w; c.height = sp.h;
+        c.getContext("2d")!.drawImage(sp.image, 0, 0, sp.w, sp.h, 0, 0, sp.w, sp.h);
+        return c;
+      },
+      tile: (t) => view.tileOf(t),
+    };
+  }
+
+  /**
+   * The 256 tile ids as drawn by the layered pack, in a 16x16 atlas of `size`-pixel tiles (RGBA as 32-bit
+   * words), for pictures made of tiles (the world map panel); null without a layered pack.
+   */
+  layeredAtlas(size: number): Uint32Array | null {
+    const view = this.layeredView;
+    if (!view) return null;
+    const c = document.createElement("canvas");
+    c.width = c.height = 16 * size;
+    const g = c.getContext("2d", { willReadFrequently: true })!;
+    for (let id = 0; id < 256; id++) g.drawImage(view.thumbnail(id, size), (id & 15) * size, (id >> 4) * size);
+    this.lv.dirty = true; // thumbnail() drew over the live view
+    return new Uint32Array(g.getImageData(0, 0, c.width, c.height).data.buffer);
+  }
+
   /** True with a layered tile pack: setView then uses the ground (13x13) and the origin. */
   get layered(): boolean { return this.layeredView !== null; }
 
@@ -287,7 +328,59 @@ export class Renderer {
     this.ui.drawImage(this.scratch.canvas, 0, 0, SCREEN_W, SCREEN_H, 0, 0, SCREEN_W, SCREEN_H);
   }
 
+  /**
+   * Control glyphs (< 0x20) of the original charset, drawn as simple shapes with the modern font instead of the
+   * 1987 bitmaps: the peer-at-gem map symbols (0x01 the party; dungeon/tables.ts PEER_GLYPHS: 0x06 ladder up, 0x05 ladder down,
+   * 0x04 both, 0x0F orb, 0x00 altar, 0x0E door, 0x02 room, 0x03 wall), the title brackets 0x10/0x11, the moons
+   * 0x14-0x1B and the turning cursor 0x1C-0x1F. False for a code without a shape here.
+   */
+  private drawSymbol(code: number, col: number, row: number): boolean {
+    const g = this.ui, x = col * 8, y = row * 8;
+    const fill = (c: string, ...r: number[][]) => { g.fillStyle = c; for (const [a, b, w, h] of r) g.fillRect(x + a, y + b, w, h); };
+    const path = (c: string, pts: number[][]) => {
+      g.fillStyle = c; g.beginPath(); g.moveTo(x + pts[0][0], y + pts[0][1]);
+      for (const [a, b] of pts.slice(1)) g.lineTo(x + a, y + b);
+      g.closePath(); g.fill();
+    };
+    g.fillStyle = "#000";
+    g.fillRect(x, y, 8, 8);
+    switch (code) {
+      case 0x03: fill("#a0603a", [0, 0, 8, 8]); fill("#6b3a1f", [0, 3.5, 8, 1], [3.5, 0, 1, 3.5], [1.5, 4.5, 1, 3.5], [5.5, 4.5, 1, 3.5]); return true;
+      case 0x02: fill("#55ffff", [1, 1, 6, 1], [1, 6, 6, 1], [1, 1, 1, 6], [6, 1, 1, 6]); return true;
+      case 0x0e: fill("#a0603a", [0, 0, 8, 8]); fill("#4a2b12", [2, 1, 4, 7]); fill("#ffd36a", [4.5, 4, 1, 1]); return true;
+      case 0x06: path("#55ff7a", [[4, 1], [7, 6], [1, 6]]); return true;
+      case 0x05: path("#ff9a55", [[1, 2], [7, 2], [4, 7]]); return true;
+      case 0x04: path("#55ff7a", [[4, 0], [7, 3.5], [1, 3.5]]); path("#ff9a55", [[1, 4.5], [7, 4.5], [4, 8]]); return true;
+      case 0x0f: g.fillStyle = "#c78bff"; g.beginPath(); g.arc(x + 4, y + 4, 2.8, 0, Math.PI * 2); g.fill(); return true;
+      case 0x00: fill("#ffd36a", [3.5, 1, 1, 6], [1.5, 3, 5, 1]); return true;
+      case 0x01: path("#ff4d5e", [[4, 0.5], [7.5, 4], [4, 7.5], [0.5, 4]]); fill("#ffd36a", [3, 3, 2, 2]); return true;
+      case 0x10: path("#55ffff", [[6, 1], [6, 7], [2, 4]]); return true;
+      case 0x11: path("#55ffff", [[2, 1], [2, 7], [6, 4]]); return true;
+    }
+    if (code >= 0x14 && code <= 0x1b) {
+      // moon phase 0 (new) .. 4 (full) .. 7: a disc with a dark part sliding across it
+      const p = code - 0x14;
+      g.fillStyle = p === 0 ? "#333a55" : "#dfe6ff";
+      g.beginPath(); g.arc(x + 4, y + 4, 3.2, 0, Math.PI * 2); g.fill();
+      if (p !== 0 && p !== 4) {
+        g.fillStyle = "#000";
+        g.beginPath(); g.arc(x + 4 + (p < 4 ? -(4 - p) * 1.6 : (p - 4) * 1.6), y + 4, 3.2, 0, Math.PI * 2); g.fill();
+      }
+      return true;
+    }
+    if (code >= 0x1c && code <= 0x1f) {
+      // turning cursor: a bar in four orientations
+      const k = code - 0x1c;
+      g.save(); g.translate(x + 4, y + 4); g.rotate((k * Math.PI) / 4);
+      g.fillStyle = "#55ffff"; g.fillRect(-3.5, -0.75, 7, 1.5);
+      g.restore();
+      return true;
+    }
+    return false;
+  }
+
   drawGlyph(code: number, col: number, row: number) {
+    if (this.fontMode === "modern" && code < 0x20 && this.drawSymbol(code, col, row)) return;
     if (this.fontMode === "modern" && code >= 0x20 && code !== 0x7f) {
       this.ui.fillStyle = "#000";
       this.ui.fillRect(col * 8, row * 8, 8, 8);
@@ -304,8 +397,18 @@ export class Renderer {
     for (let i = 0; i < text.length; i++) this.drawGlyph(text.charCodeAt(i), col + i, row);
   }
 
-  /** Draws a tile into the UI layer at pixel coordinates (replacing what is there). */
+  /**
+   * Draws a tile into the UI layer at pixel coordinates (replacing what is there): projectiles and the like over
+   * the map. A layered pack's sprite is drawn instead when it has one, over what is below, at the map's scale.
+   */
   drawTileUI(t: number, x: number, y: number) {
+    const sp = this.layeredView?.spriteOf(t);
+    if (sp) {
+      const k = TILE / this.layeredView!.pack.def.tileSize, w = sp.w * k, h = sp.h * k;
+      this.ui.imageSmoothingEnabled = false;
+      this.ui.drawImage(sp.image, 0, 0, sp.w, sp.h, x + (TILE - w) / 2, y + TILE + sp.dy * k - h, w, h);
+      return;
+    }
     const img = this.scratch.createImageData(16, 16);
     const p = this.assets.tiles[t].pixels;
     for (let i = 0; i < 256; i++) {

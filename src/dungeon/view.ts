@@ -5,7 +5,8 @@
 import * as THREE from "three";
 import { EGA_PALETTE } from "../formats/ega";
 import type { Assets } from "../render/assets";
-import { SCROLL_TILES } from "../game/tiles";
+import type { PackArt } from "../render/renderer";
+import { SCROLL_TILES, T } from "../game/tiles";
 
 /** Orientation as stored in the save (0x9334): 0 West, 1 North, 2 East, 3 South. */
 export const DIR_DX = [-1, 0, 1, 0];
@@ -48,6 +49,10 @@ export class DungeonView {
   private readonly plane = new THREE.PlaneGeometry(1, 1);
   private readonly mats = new Map<string, THREE.Material>();
   private readonly tileTex = new Map<string, THREE.DataTexture>();
+  /** Textures made from the layered pack's pictures (static: they do not scroll). */
+  private readonly packTex = new Map<string, THREE.Texture>();
+  /** Whether the pack has an opaque tile for an id (wall and door faces). */
+  private readonly packHas = new Map<number, boolean>();
   private monsters: { sprite: THREE.Sprite; base: number; phase: number }[] = [];
   private sprites: THREE.Sprite[] = [];
   private lastScroll = 0;
@@ -57,7 +62,8 @@ export class DungeonView {
   private t0 = 0;
   private yawTarget = 0;
 
-  constructor(private readonly assets: Assets) {
+  /** `art`: a layered pack's pictures, used instead of the original 16-pixel tiles for the ids it covers. */
+  constructor(private readonly assets: Assets, private readonly art: PackArt | null = null) {
     this.scene.background = new THREE.Color(0x000000);
     this.scene.add(this.world);
     this.camera.rotation.order = "YXZ";
@@ -88,8 +94,21 @@ export class DungeonView {
     tex.needsUpdate = true;
   }
 
-  private tile(t: number, transparentBlack: boolean): THREE.DataTexture {
+  private tile(t: number, transparentBlack: boolean): THREE.Texture {
     const key = `${t}:${transparentBlack}`;
+    const packed = this.packTex.get(key);
+    if (packed) return packed;
+    // the pack's sprite (creatures, chests...) or opaque tile (fields), when it has one
+    const pic = this.art && (transparentBlack ? this.art.sprite(t) : this.art.tile(t) ?? this.art.sprite(t));
+    if (pic) {
+      const ct = new THREE.CanvasTexture(pic);
+      ct.magFilter = THREE.NearestFilter;
+      ct.minFilter = THREE.LinearFilter;
+      ct.generateMipmaps = false;
+      ct.colorSpace = THREE.SRGBColorSpace;
+      this.packTex.set(key, ct);
+      return ct;
+    }
     let tex = this.tileTex.get(key);
     if (!tex) {
       const p = this.assets.tiles[t].pixels;
@@ -105,8 +124,23 @@ export class DungeonView {
     return m;
   }
 
+  /**
+   * A face textured with a layered pack's opaque tile (0x7F wall, 0x3A door), the x-facing ones darker so that
+   * corners still read; null without such a tile. Interpretation of the port: the original's faces are flat.
+   */
+  private packFaceMat(key: string, t: number, axisX: boolean): THREE.Material | null {
+    let has = this.packHas.get(t);
+    if (has === undefined) this.packHas.set(t, has = !!this.art?.tile(t));
+    if (!has) return null;
+    return this.mat(`${key}${axisX}`, () => new THREE.MeshBasicMaterial({
+      map: this.tile(t, false), color: axisX ? new THREE.Color(0.72, 0.72, 0.78) : new THREE.Color(1, 1, 1),
+    }));
+  }
+
   /** Wall face: EGA blue (y-facing) or green (x-facing) fill with a black outline, like FUN_1000_2297. */
   private wallMat(axisX: boolean) {
+    const packed = this.packFaceMat("packwall", T.WALL, axisX);
+    if (packed) return packed;
     return this.mat(`wall${axisX}`, () => {
       const fill = axisX ? 2 : 1;
       const tex = this.makeTexture(16, 16, (x, y) => (x === 0 || y === 0 || x === 15 || y === 15 ? 0 : fill), false);
@@ -116,6 +150,8 @@ export class DungeonView {
 
   /** Door (and room entrance): wall with a cyan door panel (FUN_1000_b35c). */
   private doorMat(axisX: boolean) {
+    const packed = this.packFaceMat("packdoor", T.DOOR, axisX);
+    if (packed) return packed;
     return this.mat(`door${axisX}`, () => {
       const fill = axisX ? 2 : 1;
       const tex = this.makeTexture(16, 16, (x, y) => {

@@ -64,7 +64,7 @@ for (const name of names) {
   page.on("pageerror", (e) => logs.push(`[pageerror] ${e.message}`));
   // "intro*" scenarios start on the title screen, the others directly in the game.
   const intro = name.startsWith("intro");
-  await page.goto(`${URL}?${intro ? "" : "skipintro&"}seed=1&layout=classic&title=classic${process.env.QUERY ? "&" + process.env.QUERY : ""}`, { waitUntil: "networkidle0" });
+  await page.goto(`${URL}?${intro ? "" : "skipintro&"}seed=1&layout=classic&title=classic&pack=original${process.env.QUERY ? "&" + process.env.QUERY : ""}`, { waitUntil: "networkidle0" });
   await page.waitForFunction(intro ? "window.__game" : "window.__game && window.__game.map", { timeout: 15000 });
   await pause(800);
   let n = 0;

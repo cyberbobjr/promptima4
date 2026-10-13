@@ -6,7 +6,7 @@ import { config } from "../config/config";
 import { assets } from "../assets/store";
 import type { PlayerRecord, SaveGame } from "../formats/save";
 import { EGA_PALETTE } from "../formats/ega";
-import { Renderer, TILE, VIEW_TILES, VIEW_X, VIEW_Y } from "../render/renderer";
+import { Renderer, SCREEN_H, SCREEN_W, TILE, VIEW_TILES, VIEW_X, VIEW_Y } from "../render/renderer";
 import { Console } from "./console";
 import { Input, INTERRUPT, type Key } from "./input";
 import { DIR_NAMES, DIRS, tileAt, type Dir, type MapCtx, type Npc, type WorldMap } from "./maps";
@@ -388,11 +388,13 @@ export class Game {
     if (!base || !this.save || !this.map) {
       r.setView(null);
       r.view3d = null;
-      if (base) r.ui.drawImage(this.frameCanvas, 0, 0);
+      if (base && !r.compact) r.ui.drawImage(this.frameCanvas, 0, 0);
       drawLayers();
       return;
     }
-    r.ui.drawImage(this.frameCanvas, 0, 0);
+    // the responsive layout has its own panels: no 1987 frame (it would show around the wide pictures)
+    if (r.compact) r.clearRect(0, 0, SCREEN_W, SCREEN_H);
+    else r.ui.drawImage(this.frameCanvas, 0, 0);
     r.clearRect(VIEW_X, VIEW_Y, VIEW_TILES * TILE, VIEW_TILES * TILE);
     // viewport: the topmost layer providing tiles or a 3D scene, else the map
     let viewLayer = null;
@@ -401,7 +403,7 @@ export class Game {
     // layered tile packs also take the plain ground (13x13) and the map position of the viewport (animation phases)
     if (viewLayer) r.setView(viewLayer.view?.() ?? null, r.layered ? viewLayer.ground?.() ?? undefined : undefined);
     else r.setView(viewTiles(this), r.layered ? viewGround(this) : undefined, { x: this.px - (VIEW_TILES >> 1), y: this.py - (VIEW_TILES >> 1) });
-    drawStatus(this, r);
+    if (!r.compact) drawStatus(this, r);
     drawLayers();
   }
 }

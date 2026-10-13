@@ -12,6 +12,11 @@
 // It is redrawn when the view changes and when the pack's animation frame (`fps`) advances.
 import type { LayeredPack } from "../assets/store";
 import { isOpaque, T } from "../game/tiles";
+import { DISPLAY_FONT, loadEditionFonts } from "./fonts";
+
+/** Sign tiles: the letters A-Z (0x60-0x79) and the plain board pieces 0x7A-0x7E, drawn by drawSign. */
+const SIGN_FIRST = T.LETTER_A, SIGN_LAST = 0x7e, LETTER_Z = 0x79;
+const isSign = (t: number) => t >= SIGN_FIRST && t <= SIGN_LAST;
 
 const N = 11, G = N + 2;
 /** Orthogonal neighbours, in tie-break order. */
@@ -38,7 +43,13 @@ export class LayeredView {
   /** Resolved ground id per cell of the 13x13 grid: a terrain id, a `tiles` id or a fallback id. */
   private readonly under = new Int16Array(G * G);
 
+  /** Sign tiles already drawn, by letter, ends and font state. */
+  private readonly signs = new Map<string, HTMLCanvasElement>();
+  private signFont = false;
+
   constructor(readonly pack: LayeredPack, private readonly atlas: CanvasImageSource, private readonly atlasTile: number) {
+    // the signs are painted in the title's display face: redrawn once it has loaded
+    void loadEditionFonts().then(() => { this.signFont = true; this.signs.clear(); });
     const def = pack.def;
     this.S = def.tileSize;
     const mk = (w: number) => {
@@ -141,6 +152,12 @@ export class LayeredView {
       for (let vx = 0; vx < N; vx++) {
         const t = tiles[vy * N + vx], x = vx * S, y = vy * S;
         if (t < 0) { ctx.fillStyle = "#000"; ctx.fillRect(x, y, S, S); continue; }
+        if (isSign(t)) {
+          // one continuous board along a word: edges only where the row of sign tiles ends (or the view does)
+          const left = vx > 0 && !isSign(tiles[vy * N + vx - 1]), right = vx < N - 1 && !isSign(tiles[vy * N + vx + 1]);
+          ctx.drawImage(this.sign(t, left, right), x, y);
+          continue;
+        }
         const gi = (vy + 1) * G + vx + 1;
         let f = -1;
         if (!this.terrain.has(t) && !this.sprite.has(t) && def.groundOnly?.[t] === undefined) f = t;
@@ -184,6 +201,88 @@ export class LayeredView {
     for (const [dx, srcX, w] of [[0, S - ox, ox], [ox, 0, S - ox]])
       for (const [dy, srcY, h] of [[0, S - oy, oy], [oy, 0, S - oy]])
         if (w > 0 && h > 0) ctx.drawImage(img, sx + srcX, srcY, w, h, x + dx, y + dy, w, h);
+  }
+
+  /** First frame of the pack's opaque tile for an id (fields, lava, floors), or null. */
+  tileOf(id: number): HTMLCanvasElement | null {
+    const k = this.tile.get(id);
+    if (k === undefined) return null;
+    const c = document.createElement("canvas");
+    c.width = c.height = this.S;
+    c.getContext("2d")!.drawImage(this.pack.tiles[k], 0, 0, this.S, this.S, 0, 0, this.S, this.S);
+    return c;
+  }
+
+  /** The sprite of a tile id (first frame), or null. */
+  spriteOf(id: number): { image: ImageBitmap; w: number; h: number; dy: number } | null {
+    const k = this.sprite.get(id);
+    if (k === undefined) return null;
+    const s = this.pack.def.sprites[k];
+    return { image: this.pack.sprites[k], w: s.w, h: s.h, dy: s.dy ?? 0 };
+  }
+
+  /**
+   * Picture of one tile id as the pack draws it (a view filled with that id: the terrain with its textures, a
+   * place or an object over its ground), `size` pixels square. Redraws this.canvas: the caller marks the live
+   * view dirty afterwards.
+   */
+  thumbnail(id: number, size: number): HTMLCanvasElement {
+    const tiles = new Array<number>(N * N).fill(id);
+    this.draw(tiles, LayeredView.derive(tiles), 0, 0);
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d")!;
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "high";
+    const S = this.S, mid = (N >> 1) * S;
+    g.drawImage(this.canvas, mid, mid, S, S, 0, 0, size, size);
+    return c;
+  }
+
+  /**
+   * A sign tile: a wooden board with dark top and bottom rails (and an end post where the word ends), the letter
+   * painted in gold in the display face. The original's letters are glyphs on black with magenta rails.
+   */
+  private sign(t: number, left: boolean, right: boolean): HTMLCanvasElement {
+    const key = `${t}:${+left}${+right}:${+this.signFont}`;
+    let c = this.signs.get(key);
+    if (c) return c;
+    const S = this.S;
+    c = document.createElement("canvas");
+    c.width = c.height = S;
+    const g = c.getContext("2d")!;
+    const wood = g.createLinearGradient(0, 0, 0, S);
+    wood.addColorStop(0, "#8d5d2e"); wood.addColorStop(1, "#5f3a1b");
+    g.fillStyle = wood;
+    g.fillRect(0, 0, S, S);
+    // two planks and a little grain (fixed per tile, so the board does not flicker)
+    const px = Math.max(1, Math.round(S / 32));
+    g.fillStyle = "#4a2b12";
+    g.fillRect(0, Math.round(S * 0.52), S, px);
+    g.fillStyle = "rgba(40, 20, 6, 0.28)";
+    for (let i = 0; i < 4; i++) g.fillRect(((t * 7 + i * 11) % 28) / 32 * S, (0.2 + i * 0.17) * S, S * 0.22, px);
+    // rails, and posts where the board ends
+    const rail = Math.round(S * 0.1);
+    g.fillStyle = "#2a1608";
+    g.fillRect(0, 0, S, rail); g.fillRect(0, S - rail, S, rail);
+    if (left) g.fillRect(0, 0, rail, S);
+    if (right) g.fillRect(S - rail, 0, rail, S);
+    g.fillStyle = "rgba(255, 214, 150, 0.35)";
+    g.fillRect(left ? rail : 0, rail, S - (left ? rail : 0) - (right ? rail : 0), px);
+    if (t <= LETTER_Z) {
+      const ch = String.fromCharCode(65 + t - SIGN_FIRST);
+      g.font = `${Math.round(S * 0.7)}px "${DISPLAY_FONT}", serif`;
+      g.textAlign = "center";
+      g.textBaseline = "middle";
+      g.fillStyle = "#24120a";
+      g.fillText(ch, S / 2 + px, S * 0.53 + px);
+      const gold = g.createLinearGradient(0, S * 0.2, 0, S * 0.85);
+      gold.addColorStop(0, "#fff0bf"); gold.addColorStop(0.5, "#ffd36a"); gold.addColorStop(1, "#c08a2c");
+      g.fillStyle = gold;
+      g.fillText(ch, S / 2, S * 0.53);
+    }
+    this.signs.set(key, c);
+    return c;
   }
 
   /** Dual grid of layer k: tile (i, j), i, j in 0..11, reads cells (i-1, j-1) NW .. (i, j) SE. */

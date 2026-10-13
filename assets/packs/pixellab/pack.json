@@ -2,7 +2,7 @@
  "name": "PixelLab",
  "format": 2,
  "tileSize": 32,
- "fallback": "scale4x-derived",
+ "fallback": "original",
  "fps": 6,
  "base": {
   "image": "terrain/base.png",
@@ -101,6 +101,9 @@
   "67": 4,
   "74": 62,
   "75": 4,
+  "77": 4,
+  "78": 4,
+  "79": 4,
   "128": 1,
   "129": 1,
   "130": 1,
@@ -893,6 +896,33 @@
    "name": "wheel",
    "ids": [54],
    "image": "sprites/wheel.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "missile",
+   "ids": [77],
+   "image": "sprites/missile.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "magic-flash",
+   "ids": [78],
+   "image": "sprites/magic-flash.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "hit-flash",
+   "ids": [79],
+   "image": "sprites/hit-flash.png",
    "w": 32,
    "h": 32,
    "frames": 1,

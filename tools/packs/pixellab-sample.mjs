@@ -161,6 +161,10 @@ export const SPRITES = {
   mast: { desc: "ship mast seen from above on a wooden deck: thick round wooden mast base with a furled sail on its yard and coiled ropes", ground: "wood", suffix: OBJ },
   wheel: { desc: "ship steering wheel: wooden helm wheel with handles on a small stand", ground: "wood", suffix: OBJ },
   "ladder-down": { desc: "top of a wooden ladder going down into a dark square hole in the floor", ground: "dungeon", suffix: OBJ },
+  // combat effects (0x4D missile, 0x4E magic flash, 0x4F hit flash), drawn over the target's square
+  missile: { desc: "small glowing projectile: a short arrow bolt with a bright white-orange head and a faint motion trail, flying diagonally", ground: "grass", suffix: "game effect sprite, top-down view" },
+  "magic-flash": { desc: "burst of blue and violet magical sparkles and stars radiating from the center, bright core", ground: "grass", suffix: "game effect sprite, top-down view" },
+  "hit-flash": { desc: "impact burst of orange and red sparks and a white flash radiating from the center, small debris", ground: "grass", suffix: "game effect sprite, top-down view" },
 };
 /** Contact sheet grounds: picked terrain or tile files (relative to OUT). */
 const GROUNDS = { grass: "terrain-1/8.png", sea: "tileset-deep/1111.png", shallows: "tileset-shallows/1111.png", brick: "tiles-paving-1/5.png", dungeon: "tiles-floors-1/4.png", wood: "tiles-floors-1/2.png" };
