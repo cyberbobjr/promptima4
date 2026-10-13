@@ -14,8 +14,13 @@ export interface Config {
   /** font: "auto" = original 8x8 font for English with the original tiles, the modern font otherwise. */
   display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean };
   controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number };
-  /** PC-speaker effects (src/audio/speaker.ts); volume 0..1. V)olume toggles `enabled` in the game. */
-  sound: { enabled: boolean; volume: number };
+  /**
+   * Sound effects; volume 0..1. V)olume toggles `enabled` in the game. pack: a sound pack under
+   * assets/sounds/ (src/audio/sounds.ts), "classic" = the PC-speaker effects (src/audio/speaker.ts).
+   */
+  sound: { enabled: boolean; volume: number; pack: string };
+  /** Background music (src/audio/music.ts): a music pack under assets/music/; silent when `sound.enabled` is off. */
+  music: { enabled: boolean; volume: number; pack: string };
   debug: { enabled: boolean; godMode: boolean };
   /** Conversation provider for NPCs (not implemented yet: see src/game/talk/provider.ts). */
   llm: { enabled: boolean; provider: string; model: string; apiKey: string };

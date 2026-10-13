@@ -33,6 +33,7 @@ import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
 import { attack, getChest, holeUp, locate, openChest, quitSave, readyWeapon, volume, wearArmour, ztats, ztatsFor } from "./actions";
 import { playEffect, SFX } from "../audio/speaker";
+import { stepEvent } from "../audio/sounds";
 import { inverted, partyRowsRects, statusRowRect } from "../ui/invert";
 
 export const CLASS_NAMES = CLASSES;
@@ -326,7 +327,7 @@ export class Game {
     this.con.println(DIR_NAMES[dir]);
     const nx = this.px + dx, ny = this.py + dy;
     if (this.map.kind === "town" && (nx < 0 || ny < 0 || nx >= 32 || ny >= 32)) {
-      await playEffect(SFX.STEP);
+      await playEffect(SFX.STEP, 0, stepEvent(tileAt(this.map, this.px, this.py), this.onHorse));
       await leaveTown(this);
       this.endTurn();
       return;
@@ -342,7 +343,7 @@ export class Game {
       (this.map.kind === "world" && this.onFoot && this.objects.some((o) => o.x === (nx & 255) && o.y === (ny & 255) && o.tile >= 0x80));
     if (blocked) { await this.blocked(); this.endTurn(); return; }
     if (rand(1000) < slowChance(t) * 1000) { this.con.print(MSG_CORE.slowProgress); this.endTurn(); return; }
-    await playEffect(SFX.STEP);
+    await playEffect(SFX.STEP, 0, stepEvent(t, this.onHorse));
     this.setPos(nx, ny);
     pirateAmbush(this, dir);
     this.endTurn();

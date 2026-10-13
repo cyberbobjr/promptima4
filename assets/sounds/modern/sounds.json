@@ -1,0 +1,74 @@
+{
+ "format": 1,
+ "name": "modern",
+ "events": {
+  "step-grass": {
+   "file": "step-grass.mp3"
+  },
+  "step-stone": {
+   "file": "step-stone.mp3"
+  },
+  "blocked": {
+   "file": "blocked.mp3"
+  },
+  "bad-command": {
+   "file": "bad-command.mp3"
+  },
+  "sword-swing": {
+   "file": "sword-swing.mp3"
+  },
+  "sword-hit": {
+   "file": "sword-hit.mp3"
+  },
+  "miss": {
+   "file": "miss.mp3"
+  },
+  "monster-attack": {
+   "file": "monster-attack.mp3"
+  },
+  "hurt": {
+   "file": "hurt.mp3"
+  },
+  "spell-cast": {
+   "file": "spell-cast.mp3"
+  },
+  "moongate": {
+   "file": "moongate.mp3"
+  },
+  "cannon": {
+   "file": "cannon.mp3"
+  },
+  "door": {
+   "file": "door.mp3"
+  },
+  "chest": {
+   "file": "chest.mp3"
+  },
+  "level-up": {
+   "file": "level-up.mp3"
+  },
+  "sail": {
+   "file": "sail.mp3"
+  },
+  "step-wood": {
+   "file": "step-stone.mp3",
+   "stand_in": true
+  },
+  "step-horse": {
+   "file": "step-grass.mp3",
+   "stand_in": true
+  },
+  "flee": {
+   "file": "miss.mp3",
+   "stand_in": true
+  },
+  "whirlpool": {
+   "file": "moongate.mp3",
+   "stand_in": true
+  },
+  "twister": {
+   "file": "moongate.mp3",
+   "stand_in": true
+  }
+ }
+}

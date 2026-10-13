@@ -1,0 +1,9 @@
+{
+  "_note": "Variant picked per sound in test-output/sounds/sfx/<name>/<n>.mp3; a name instead of a number reuses another sound until this one is generated.",
+  "sounds": {
+    "step-grass": 1, "step-stone": 1, "blocked": 1, "bad-command": 1, "sword-swing": 1, "sword-hit": 1, "miss": 1,
+    "monster-attack": 1, "hurt": 1, "spell-cast": 1, "moongate": 1, "cannon": 1, "door": 1, "chest": 1, "level-up": 1,
+    "sail": 1,
+    "step-wood": "step-stone", "step-horse": "step-grass", "flee": "miss", "whirlpool": "moongate", "twister": "moongate"
+  }
+}

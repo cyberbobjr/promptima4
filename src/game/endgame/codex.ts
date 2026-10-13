@@ -5,6 +5,7 @@ import type { Game } from "../game";
 import { addDrawHook, blankView, loadPicture, PixelLayer, shake } from "./ui";
 import { flushKeys, pauseUnits as pause, sameText, ticks } from "../prompts";
 import { MSG_MAGIC as M } from "../texts/magic";
+import { withScene } from "../../audio/music";
 
 /** Thrown to unwind the codex after an ejection (the original longjmps back to the main loop). */
 class Ejected extends Error {}
@@ -148,7 +149,7 @@ class Codex {
 export async function runCodex(g: Game) {
   const codex = new Codex(g);
   try {
-    await codex.run();
+    await withScene("ending", () => codex.run());
   } catch (e) {
     if (!(e instanceof Ejected)) throw e;
   }

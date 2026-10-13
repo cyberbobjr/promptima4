@@ -15,6 +15,7 @@ import { T } from "./tiles";
 import { encodeObjects } from "./world/objects";
 import { worldFight, worldMonsterAt } from "./world/monsters";
 import { playEffect, SFX, toggleSound } from "../audio/speaker";
+import { cue } from "../audio/sounds";
 import { inverted, statusRowRect } from "../ui/invert";
 import { hazardFlash } from "./endgame/ui";
 
@@ -155,6 +156,7 @@ export async function getChest(g: Game) {
 
 /** Chest trap and contents (1000:7150, 1000:70F1). `who` = -1 never triggers traps (Open spell). */
 export async function openChest(g: Game, who: number) {
+  cue("chest");
   const r1 = rand8();
   if ((r1 & 1) === 0) {
     const kind = r1 & 3 & rand8();

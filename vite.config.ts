@@ -19,7 +19,7 @@ function extractedAssets(): Plugin {
         return;
       }
       fs.cpSync(src, path.join(outDir, "assets/original"), { recursive: true });
-      for (const extra of ["i18n", "packs"]) {
+      for (const extra of ["i18n", "packs", "sounds"]) {
         const dir = path.resolve("assets", extra);
         if (fs.existsSync(dir)) fs.cpSync(dir, path.join(outDir, "assets", extra), { recursive: true });
       }

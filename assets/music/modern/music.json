@@ -1,0 +1,37 @@
+{
+ "format": 1,
+ "name": "modern",
+ "tracks": {
+  "title": {
+   "file": "title.mp3"
+  },
+  "overworld": {
+   "file": "overworld.mp3"
+  },
+  "town": {
+   "file": "town.mp3"
+  },
+  "castle": {
+   "file": "castle.mp3"
+  },
+  "dungeon": {
+   "file": "dungeon.mp3"
+  },
+  "combat": {
+   "file": "dungeon.mp3",
+   "stand_in": true
+  },
+  "sailing": {
+   "file": "overworld.mp3",
+   "stand_in": true
+  },
+  "shrine": {
+   "file": "castle.mp3",
+   "stand_in": true
+  },
+  "ending": {
+   "file": "title.mp3",
+   "stand_in": true
+  }
+ }
+}

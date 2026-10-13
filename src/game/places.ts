@@ -11,6 +11,7 @@ import { runDungeon } from "./dungeon";
 import { MSG_CORE } from "./texts/core";
 import { TALK } from "./town/strings";
 import { playEffect, SFX } from "../audio/speaker";
+import { cue } from "../audio/sounds";
 
 /** Townsfolk movement at the end of a turn; hostile ones attack when adjacent. */
 export function moveNpcs(g: Game, town: TownMap) {
@@ -161,6 +162,7 @@ export async function open(g: Game) {
   if (t === T.DOOR) {
     setTile(g.map, x, y, T.BRICK_FLOOR);
     g.openedDoors.push({ x, y, turns: 4 });
+    cue("door");
     g.con.print(MSG_CORE.opened);
   } else if (t === T.LOCKED_DOOR) g.con.print(MSG_CORE.cant);
   else g.con.print(MSG_CORE.notHere);

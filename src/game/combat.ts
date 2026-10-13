@@ -34,6 +34,7 @@ import { rand8 } from "./rng";
 export { rand8 };
 import { sleep } from "./prompts";
 import { playEffect, SFX } from "../audio/speaker";
+import { stepEvent } from "../audio/sounds";
 import { inverted, statusRowRect, VIEWPORT_RECT } from "../ui/invert";
 
 const WALKABLE = new Set(WALKABLE_TILES);
@@ -269,7 +270,7 @@ class Combat {
     if (!WALKABLE.has(t) || this.occupied(nx, ny)) { await g.blocked(); return; }
     if (t === T.FIRE_FIELD && rand8() & 1) { g.con.print(M.slowProgress); return; }
     m.x = nx; m.y = ny;
-    await playEffect(SFX.STEP);
+    await playEffect(SFX.STEP, 0, stepEvent(t));
     await this.terrainEffect(m);
   }
 

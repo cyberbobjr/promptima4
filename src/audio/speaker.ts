@@ -244,13 +244,29 @@ export function initSpeaker(): void {
 const cache = new Map<string, { buf: AudioBuffer; us: number }>();
 
 /**
+ * Sound packs (src/audio/sounds.ts) take over the effects: true when the handler played (or deliberately
+ * silenced) effect n. `event` names a more precise sound for this call (a step on a given ground...).
+ */
+let handler: ((n: number, param: number, event?: string) => boolean) | null = null;
+export function setEffectHandler(h: typeof handler): void { handler = h; }
+
+/** The AudioContext and the master volume node, once a gesture created them (sound packs play through them). */
+export const audioOutput = (): { ctx: AudioContext; master: GainNode } | null => (ctx && master ? { ctx, master } : null);
+
+/**
  * 1000:1D47(n, param): plays effect n and resolves when it has been heard, like the original which
  * busy-waits while the speaker plays. Resolves at once when the sound is off (the original returns
  * at once when DS:06A6 is 0), when nothing can be heard (no user gesture yet, no WebAudio: tests) and
  * under the test driver's manual clock, so sound never changes the timing of tests.
  */
-export function playEffect(n: number, param = 0): Promise<void> {
+export function playEffect(n: number, param = 0, event?: string): Promise<void> {
   if (!(n >= 0 && n < EFFECT_COUNT)) return Promise.resolve();
+  if (handler && speakerReady() && handler(n, param, event)) {
+    // a sound pack played it (src/audio/sounds.ts): the game still waits as long as the original effect lasted
+    if (isManualClock()) return Promise.resolve();
+    const us = spansDuration(effectSpans(n, param));
+    return new Promise((r) => setTimeout(r, us / 1000));
+  }
   const random = n === 6 || n === 7 || n === 10;
   return playSpans(() => effectSpans(n, param), random ? undefined : `${n}:${param & 0xff}`);
 }

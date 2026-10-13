@@ -17,6 +17,8 @@ import { createShell } from "./ui/dom/shell";
 import { installPanels } from "./ui/panels";
 import { installPointer } from "./ui/dom/pointer";
 import * as speaker from "./audio/speaker";
+import { initSoundPacks } from "./audio/sounds";
+import { installMusic } from "./audio/music";
 import "./pwa";
 
 async function main() {
@@ -36,10 +38,12 @@ async function main() {
   }
   renderer.setFont(font);
   speaker.initSpeaker(); // the AudioContext starts on the first user gesture
+  await initSoundPacks();
   const game = new Game(renderer, new Input());
   const shell = createShell(canvas, game);
   installPanels(shell, game);
   installPointer(shell, game);
+  installMusic(game);
   renderer.resize();
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game; // used by automated tests
   if (import.meta.env.DEV) (window as unknown as { __speaker: typeof speaker }).__speaker = speaker;

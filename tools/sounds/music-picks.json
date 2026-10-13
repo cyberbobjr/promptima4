@@ -1,0 +1,7 @@
+{
+  "_note": "Track per scene: a file of test-output/music/ (Suno, instrumental), or another scene's track as a stand-in until its own is made.",
+  "tracks": {
+    "title": "title.mp3", "overworld": "overworld.mp3", "town": "town.mp3", "castle": "castle.mp3", "dungeon": "dungeon.mp3",
+    "combat": "=dungeon", "sailing": "=overworld", "shrine": "=castle", "ending": "=title"
+  }
+}

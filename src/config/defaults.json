@@ -22,7 +22,13 @@
   },
   "sound": {
     "enabled": true,
-    "volume": 0.5
+    "volume": 0.5,
+    "pack": "modern"
+  },
+  "music": {
+    "enabled": true,
+    "volume": 0.5,
+    "pack": "modern"
   },
   "debug": {
     "enabled": false,

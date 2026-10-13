@@ -1,4 +1,5 @@
 // Ships, horses and the balloon: B)oard, X)it, Y)ell and sailing with the wind (1000:2A5A).
+import { cue } from "../audio/sounds";
 import type { Game } from "./game";
 import { DIRS, tileAt, type Dir } from "./maps";
 import { MSG_CORE } from "./texts/core";
@@ -57,6 +58,7 @@ export async function sail(g: Game, dir: Dir) {
     g.con.print(MSG_CORE.slowProgress); g.endTurn(); return;
   }
   g.setPos(g.px + dx, g.py + dy);
+  cue("sail");
   pirateAmbush(g, dir);
   g.endTurn();
 }

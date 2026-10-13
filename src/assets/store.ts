@@ -93,6 +93,14 @@ export class AssetStore {
 
   json<T>(rel: string): Promise<T> { return this.jsonAt<T>(`original/${rel}`); }
 
+  /** URL of a file relative to assets/ (streamed music). */
+  url(path: string): string { return this.root + path; }
+
+  /** Raw file relative to assets/ (sound files). */
+  async binary(path: string): Promise<ArrayBuffer> {
+    return (await this.fetch(path)).arrayBuffer();
+  }
+
   /** JSON file that may be missing (null). */
   async optionalJson<T>(path: string): Promise<T | null> {
     try { return await this.jsonAt<T>(path); } catch { return null; }
