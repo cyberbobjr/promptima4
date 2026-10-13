@@ -355,10 +355,73 @@
    "name": "slime",
    "ids": [160, 161, 162, 163],
    "image": "sprites/slime.png",
-   "w": 32,
-   "h": 32,
-   "frames": 1,
-   "dy": 2
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 6
+  },
+  {
+   "name": "troll",
+   "ids": [164, 165, 166, 167],
+   "image": "sprites/troll.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 7
+  },
+  {
+   "name": "gremlin",
+   "ids": [168, 169, 170, 171],
+   "image": "sprites/gremlin.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 7
+  },
+  {
+   "name": "mimic",
+   "ids": [172, 173, 174, 175],
+   "image": "sprites/mimic.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "reaper",
+   "ids": [176, 177, 178, 179],
+   "image": "sprites/reaper.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "insects",
+   "ids": [180, 181, 182, 183],
+   "image": "sprites/insects.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "gazer",
+   "ids": [184, 185, 186, 187],
+   "image": "sprites/gazer.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "phantom",
+   "ids": [188, 189, 190, 191],
+   "image": "sprites/phantom.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
   },
   {
    "name": "orc",
@@ -368,6 +431,141 @@
    "h": 40,
    "frames": 8,
    "dy": 5
+  },
+  {
+   "name": "skeleton",
+   "ids": [196, 197, 198, 199],
+   "image": "sprites/skeleton.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "rogue",
+   "ids": [200, 201, 202, 203],
+   "image": "sprites/rogue.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "python",
+   "ids": [204, 205, 206, 207],
+   "image": "sprites/python.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "ettin",
+   "ids": [208, 209, 210, 211],
+   "image": "sprites/ettin.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 7
+  },
+  {
+   "name": "headless",
+   "ids": [212, 213, 214, 215],
+   "image": "sprites/headless.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "cyclops",
+   "ids": [216, 217, 218, 219],
+   "image": "sprites/cyclops.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "wisp",
+   "ids": [220, 221, 222, 223],
+   "image": "sprites/wisp.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
+  },
+  {
+   "name": "evilmage",
+   "ids": [224, 225, 226, 227],
+   "image": "sprites/evilmage.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "liche",
+   "ids": [228, 229, 230, 231],
+   "image": "sprites/liche.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "lavalizard",
+   "ids": [232, 233, 234, 235],
+   "image": "sprites/lavalizard.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "zorn",
+   "ids": [236, 237, 238, 239],
+   "image": "sprites/zorn.png",
+   "w": 40,
+   "h": 40,
+   "frames": 8,
+   "dy": 4
+  },
+  {
+   "name": "daemon",
+   "ids": [240, 241, 242, 243],
+   "image": "sprites/daemon.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 6
+  },
+  {
+   "name": "hydra",
+   "ids": [244, 245, 246, 247],
+   "image": "sprites/hydra.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 5
+  },
+  {
+   "name": "dragon",
+   "ids": [248, 249, 250, 251],
+   "image": "sprites/dragon.png",
+   "w": 48,
+   "h": 48,
+   "frames": 8,
+   "dy": 9
+  },
+  {
+   "name": "balron",
+   "ids": [252, 253, 254, 255],
+   "image": "sprites/balron.png",
+   "w": 44,
+   "h": 44,
+   "frames": 8,
+   "dy": 7
   }
  ]
 }
