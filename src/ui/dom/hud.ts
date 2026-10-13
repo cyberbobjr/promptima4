@@ -34,7 +34,11 @@ function flashedRows(rects: readonly ScreenRect[]): Set<number> {
 
 export function installHud(shell: Shell, g: Game): void {
   const canvas = g.r.gl.domElement;
-  const map = h("div", { class: "hud-map" });
+  // the moons on the top edge of the map frame and the wind (or the dungeon level and facing) on its bottom
+  // edge, where the 1987 screen shows them
+  const moonsBadge = h("div", { class: "hud-badge top", title: t("hud.moons") });
+  const bottomBadge = h("div", { class: "hud-badge bottom", hidden: true });
+  const map = h("div", { class: "hud-map" }, moonsBadge, bottomBadge);
   const party = h("section", { class: "hud-panel hud-party", "aria-label": t("hud.party") });
   const res = h("section", { class: "hud-panel hud-res" });
   const con = h("section", { class: "hud-panel hud-console", "aria-live": "polite", "aria-label": t("hud.console") });
@@ -45,6 +49,8 @@ export function installHud(shell: Shell, g: Game): void {
   shell.stage.classList.add("layout-modern");
   g.r.compact = true;
   g.r.resize();
+  // the canvas follows its cell (the cell changes with the panels and the command bar, not only with the window)
+  new ResizeObserver(() => g.r.resize()).observe(map);
 
   // music on/off during the game (the same setting as the title screen's knob, remembered)
   const music = h("button", {
@@ -97,7 +103,7 @@ export function installHud(shell: Shell, g: Game): void {
       }));
     }
 
-    // food, gold, spell effect, moons, wind or the layers' captions (dungeon level and facing)
+    // food, gold, spell effect; the moons, and the wind or the layers' captions (dungeon level and facing) on the map frame
     let caption: string[] | null = null;
     for (let i = layers.length - 1; i >= 0 && !caption; i--) caption = layers[i].caption?.() ?? null;
     const pad = (n: number) => String(n).padStart(4, "0");
@@ -110,11 +116,12 @@ export function installHud(shell: Shell, g: Game): void {
         h("span", {}, t("hud.food"), " ", h("b", {}, pad(Math.floor(s.food / 100)))),
         h("span", {}, t("hud.gold"), " ", h("b", {}, pad(s.gold))),
         effect ? h("span", { class: "hud-effect", title: t("hud.effect") }, effect) : null,
-        h("span", { class: "hud-moons", title: t("hud.moons") }, moon(s.trammelPhase, "trammel"), moon(s.feluccaPhase, "felucca")),
-        wind ? h("span", {}, wind) : null,
-        ...(caption ?? []).map((c) => h("span", {}, c)),
       ];
       res.replaceChildren(...parts.filter((p): p is HTMLSpanElement => p !== null), music);
+      moonsBadge.replaceChildren(moon(s.trammelPhase, "trammel"), moon(s.feluccaPhase, "felucca"));
+      const below = caption ?? (wind ? [wind] : []);
+      bottomBadge.hidden = below.length === 0;
+      bottomBadge.replaceChildren(...below.map((c) => h("span", {}, c)));
     }
 
     // console: the game's 16-column lines, the blinking cursor after the last one
