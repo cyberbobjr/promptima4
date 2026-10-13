@@ -4,6 +4,8 @@
    phone: the same, the party as compact pills. */
 #stage.layout-modern { container: stage / size; }
 .hud-grid {
+  /* own stacking context: the badges (z-index) stay under the panels of #overlay, which follows in the DOM */
+  isolation: isolate;
   --gap: 12px;
   --side-min: 280px;
   --map: min(calc(100cqh - 2 * var(--gap)), calc(100cqw - 3 * var(--gap) - var(--side-min)));
