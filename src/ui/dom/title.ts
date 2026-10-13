@@ -39,8 +39,15 @@ export function legalLinks(cls: string) {
   // the pages show the interface language (they hold English and French)
   const link = (key: string, file: string) => h("a", { href: `${base}legal/${file}?lang=${config().lang.ui}`, target: "_blank", rel: "noopener" }, t(key));
   return h("nav", { class: cls, "aria-label": t("legal.nav") },
-    link("legal.notice", "mentions-legales.html"), link("legal.terms", "cgu.html"), link("legal.contact", "contact.html"));
+    link("legal.notice", "mentions-legales.html"), link("legal.terms", "cgu.html"), link("legal.contact", "contact.html"),
+    ...SUPPORT.map(([key, href]) => h("a", { class: "support", href, target: "_blank", rel: "noopener" }, t(key))));
 }
+
+/** Voluntary support of the author (Settings > About and the title screen). */
+const SUPPORT: [string, string][] = [
+  ["legal.kofi", "https://ko-fi.com/batmanfr"],
+  ["legal.sponsors", "https://github.com/sponsors/cyberbobjr"],
+];
 
 type Item = "replay" | "resume" | "new";
 const ITEMS: Item[] = ["replay", "resume", "new"];

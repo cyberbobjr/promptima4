@@ -84,6 +84,7 @@
 .pt-legal { position: absolute; left: 0; right: 0; bottom: .45cqw; display: flex; justify-content: center; gap: 2.5cqw; font: 400 1.05cqw/1 var(--pt-pixel); }
 .pt-legal a { color: var(--pt-muted); text-decoration: none; }
 .pt-legal a:hover, .pt-legal a:focus-visible { color: var(--pt-gold); outline: none; }
+.pt-legal a.support { color: #ff8fb3; }
 .pt-root.opening:not(.done) .pt-legal { animation: pt-fade .6s 3.4s ease-out both; }
 
 /* opening sequence (4.2 s, OPENING_MS in title.ts); .done shows the final layout at once */
