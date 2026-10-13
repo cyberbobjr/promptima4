@@ -78,6 +78,8 @@ function tick(g: Game) {
     const el = current.el;
     if (el.paused && target > 0) void el.play().catch(() => undefined);
     el.volume = el.volume < target ? Math.min(target, el.volume + step * Math.max(target, 0.05)) : Math.max(target, el.volume - step);
+    // muted: the track pauses once faded out (it resumes from there when the music is back on)
+    if (target === 0 && el.volume === 0 && !el.paused) el.pause();
   }
   for (const el of fading) {
     el.volume = Math.max(0, el.volume - step);

@@ -39,6 +39,12 @@
 .hud-res { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 10px; }
 .hud-res b { color: #ffd34d; font-weight: normal; font-variant-numeric: tabular-nums; }
 .hud-effect { color: var(--ui-accent); }
+/* music on/off, at the end of the resources line */
+.hud-music { position: relative; margin-left: auto; width: 30px; height: 30px; flex: none; padding: 0; border-radius: 50%; cursor: pointer;
+  font: 400 15px/1 system-ui, sans-serif; color: #ffd36a; background: #10132e; border: 2px solid #a6a8ff; display: grid; place-items: center; }
+.hud-music:hover, .hud-music:focus-visible { outline: 2px solid #ffd36a; outline-offset: 1px; }
+.hud-music.off { color: var(--ui-dim); border-color: #44476e; }
+.hud-music.off::after { content: ""; position: absolute; width: 62%; height: 2px; background: currentColor; transform: rotate(-45deg); }
 .hud-moons { display: inline-flex; gap: 6px; font-size: 14px; }
 .hud-moon { width: 1em; height: 1em; border-radius: 50%; box-shadow: inset var(--shade) 0 0 0 var(--ui-bg); }
 .hud-moon.trammel { background: radial-gradient(circle at 35% 35%, #fff, #c7d2ff 60%, #7f8fd8); }

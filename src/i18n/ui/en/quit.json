@@ -1,0 +1,8 @@
+{
+  "quit.text": "Go back to the title screen? Unsaved progress since your last save will be lost.",
+  "quit.save": "Save and go to the title",
+  "quit.leave": "Go to the title without saving",
+  "quit.cancel": "Keep playing",
+  "quit.cantSave": "Saving is only possible on the world map or in a dungeon, when the game waits for a command.",
+  "quit.noGame": "No game in progress."
+}

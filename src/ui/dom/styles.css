@@ -76,3 +76,9 @@ body { font-family: var(--ui-font); font-size: 11px; -webkit-text-size-adjust: n
 .text-entry { position: absolute; left: 50%; bottom: 8%; transform: translateX(-50%); display: flex; gap: 6px; padding: 8px; background: var(--ui-panel); border: 2px solid var(--ui-line); border-radius: 6px; }
 .text-entry-field { font: inherit; font-size: 16px; min-height: var(--tap); width: 14em; background: #000; color: var(--ui-text); border: 1px solid var(--ui-line); padding: 0 8px; }
 .text-entry button { min-height: var(--tap); font: inherit; color: var(--ui-text); background: var(--ui-bg); border: 1px solid var(--ui-line); border-radius: 4px; }
+
+/* back to the title (panels/quit.ts) */
+.quit-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.quit-actions button { padding: 8px 12px; }
+.quit-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.quit-note { color: var(--ui-dim); font-size: 10px; }

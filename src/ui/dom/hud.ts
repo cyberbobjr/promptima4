@@ -6,6 +6,7 @@
 import type { Game } from "../../game/game";
 import { CLASS_NAMES } from "../../game/game";
 import { t } from "../../i18n/i18n";
+import { config, onConfigChange, updateConfig } from "../../config/config";
 import type { ScreenRect } from "../../render/renderer";
 import { h } from "./dom";
 import type { Shell } from "./shell";
@@ -43,6 +44,21 @@ export function installHud(shell: Shell, g: Game): void {
   shell.stage.classList.add("layout-modern");
   g.r.compact = true;
   g.r.resize();
+
+  // music on/off during the game (the same setting as the title screen's knob, remembered)
+  const music = h("button", {
+    type: "button", class: "hud-music",
+    onclick: () => void updateConfig({ music: { enabled: !config().music.enabled } }),
+  });
+  const showMusic = () => {
+    const on = config().music.enabled;
+    music.textContent = "♪";
+    music.classList.toggle("off", !on);
+    music.setAttribute("aria-pressed", on ? "false" : "true");
+    music.title = music.ariaLabel = t(on ? "title.musicOn" : "title.musicOff");
+  };
+  showMusic();
+  onConfigChange(showMusic);
 
   let partyKey = "", resKey = "", conKey = "", solo: boolean | null = null;
   const frame = () => {
@@ -96,7 +112,7 @@ export function installHud(shell: Shell, g: Game): void {
         wind ? h("span", {}, wind) : null,
         ...(caption ?? []).map((c) => h("span", {}, c)),
       ];
-      res.replaceChildren(...parts.filter((p): p is HTMLSpanElement => p !== null));
+      res.replaceChildren(...parts.filter((p): p is HTMLSpanElement => p !== null), music);
     }
 
     // console: the game's 16-column lines, the blinking cursor after the last one

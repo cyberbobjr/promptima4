@@ -3,5 +3,6 @@
   "menu.worldmap": "Carte",
   "menu.help": "Aide",
   "menu.settings": "Options",
-  "menu.debug": "Débogage"
+  "menu.debug": "Débogage",
+  "menu.quit": "Écran titre"
 }

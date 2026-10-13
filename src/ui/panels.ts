@@ -8,6 +8,7 @@ import { createHelpPanel } from "./panels/help";
 import { createInventoryPanel } from "./panels/inventory";
 import { createSettingsPanel } from "./panels/settings";
 import { createWorldmapPanel } from "./panels/worldmap";
+import { createQuitPanel } from "./panels/quit";
 
 export function installPanels(shell: Shell, g: Game): void {
   installJournal(g); // discovered places (world map), saved in EXTRA.json
@@ -15,5 +16,6 @@ export function installPanels(shell: Shell, g: Game): void {
   shell.addPanel(() => createWorldmapPanel(g), { key: "F3" });
   shell.addPanel(() => createHelpPanel(g), { key: "F1" });
   shell.addPanel(() => createSettingsPanel(g), { key: "F10" });
+  shell.addPanel(() => createQuitPanel(g), { key: "F9", visible: () => !!g.save });
   shell.addPanel(() => createDebugPanel(g), { key: "F12", visible: () => config().debug.enabled });
 }

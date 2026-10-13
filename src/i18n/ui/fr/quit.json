@@ -1,0 +1,8 @@
+{
+  "quit.text": "Revenir à l'écran titre ? Ce qui a été fait depuis la dernière sauvegarde sera perdu.",
+  "quit.save": "Sauvegarder et revenir au titre",
+  "quit.leave": "Revenir au titre sans sauvegarder",
+  "quit.cancel": "Continuer à jouer",
+  "quit.cantSave": "La sauvegarde n'est possible que sur la carte du monde ou dans un donjon, quand le jeu attend une commande.",
+  "quit.noGame": "Aucune partie en cours."
+}
