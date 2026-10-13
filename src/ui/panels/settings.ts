@@ -15,7 +15,7 @@ const KNOWN_PACKS = ["original", "pixellab", "scale4x-derived", "scale3x-derived
 const LANG_NAMES: Record<string, string> = { en: "English", fr: "Français" };
 const LLM_PROVIDERS = ["anthropic", "openai", "ollama"];
 
-type Opt = { value: string; label: string };
+type Opt = { value: string; label: string; disabled?: boolean };
 
 /** Values read at start-up: when they differ from the config, a reload is needed. */
 const startup = (c: Config) => JSON.stringify([c.lang.game, c.lang.ui, c.tiles.pack, c.display.font, c.display.layout, c.display.title]);
@@ -38,7 +38,7 @@ export function createSettingsPanel(g: Game): Panel {
 
       const select = (id: string, value: string, opts: Opt[], onChange: (v: string) => void) =>
         h("select", { id, class: "set-input", onchange: (e) => onChange((e.target as HTMLSelectElement).value) },
-          opts.map((o) => h("option", { value: o.value, selected: o.value === value }, o.label)));
+          opts.map((o) => h("option", { value: o.value, selected: o.value === value, disabled: !!o.disabled }, o.label)));
       const check = (id: string, value: boolean, onChange: (v: boolean) => void) =>
         h("input", { id, type: "checkbox", class: "set-check", checked: value, onchange: (e) => onChange((e.target as HTMLInputElement).checked) });
       const text = (id: string, value: string, onChange: (v: string) => void, attrs: Record<string, string> = {}) =>
@@ -55,6 +55,10 @@ export function createSettingsPanel(g: Game): Panel {
       const packs = [...new Set([...KNOWN_PACKS, c.tiles.pack])];
       const packLabel = (p: string) => available.get(p) === false ? `${p} (${t("settings.packMissing")})` : p;
       const modes = (prefix: string, values: string[]): Opt[] => values.map((v) => ({ value: v, label: t(`${prefix}.${v}`) }));
+      // the original font and the 1987 screens need the original graphics (npm run extract)
+      const classic = (opts: Opt[], ...values: string[]): Opt[] => assets.originals ? opts
+        : opts.map((o) => values.includes(o.value) ? { ...o, label: `${o.label} (${t("settings.needsOriginals")})`, disabled: true } : o);
+      const originalsHint = assets.originals ? undefined : t("settings.originalsHint");
 
       const needsReload = startup(c) !== loaded;
       body.append(
@@ -70,11 +74,11 @@ export function createSettingsPanel(g: Game): Panel {
           row("set-pack", t("settings.pack"), select("set-pack", c.tiles.pack, packs.map((p) => ({ value: p, label: packLabel(p) })), (v) => save({ tiles: { pack: v } }))),
           row("set-pack-other", t("settings.packOther"), text("set-pack-other", KNOWN_PACKS.includes(c.tiles.pack) ? "" : c.tiles.pack,
             (v) => { if (v) void save({ tiles: { pack: v } }); }, { placeholder: t("settings.packOtherHint") })),
-          row("set-font", t("settings.font"), select("set-font", c.display.font, modes("settings.font", ["auto", "original", "modern"]),
-            (v) => save({ display: { font: v as Config["display"]["font"] } })), t("settings.fontHint")),
-          row("set-layout", t("settings.layout"), select("set-layout", c.display.layout ?? "modern", modes("settings.layout", ["modern", "classic"]),
+          row("set-font", t("settings.font"), select("set-font", c.display.font, classic(modes("settings.font", ["auto", "original", "modern"]), "original"),
+            (v) => save({ display: { font: v as Config["display"]["font"] } })), assets.originals ? t("settings.fontHint") : originalsHint),
+          row("set-layout", t("settings.layout"), select("set-layout", c.display.layout ?? "modern", classic(modes("settings.layout", ["modern", "classic"]), "classic"),
             (v) => save({ display: { layout: v as Config["display"]["layout"] } }))),
-          row("set-title", t("settings.title"), select("set-title", c.display.title ?? "modern", modes("settings.title", ["modern", "classic"]),
+          row("set-title", t("settings.title"), select("set-title", c.display.title ?? "modern", classic(modes("settings.title", ["modern", "classic"]), "classic"),
             (v) => save({ display: { title: v as Config["display"]["title"] } })))),
         section(t("settings.controls"),
           row("set-bar", t("settings.commandBar"), select("set-bar", c.controls.commandBar, modes("settings.bar", ["auto", "always", "never"]), async (v) => {

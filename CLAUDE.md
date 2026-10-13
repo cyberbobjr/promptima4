@@ -15,7 +15,7 @@ Node is bundled in `.nodeenv` and is not on PATH:
 - Git Bash: `export PATH="/e/IdeaProjects/u4/.nodeenv/Scripts:$PATH"`
 
 ```
-npm run extract -- --game-dir "C:\Program Files\GOG Galaxy\Games\Ultima 4"   # one-time; required before running
+npm run extract -- --game-dir "C:\Program Files\GOG Galaxy\Games\Ultima 4"   # optional: original graphics + derived packs (git-ignored)
 npm run dev                 # browser only, http://127.0.0.1:1420 (strict port)
 npm run tauri dev           # desktop app (needs Rust / MSVC)
 npm run build               # tsc --noEmit + vite build
@@ -25,25 +25,25 @@ npx vitest run tests/pathfinding.test.ts      # single file
 npx vitest run -t "name of test"              # single test by name
 node tools/scenarios.mjs --ref                # record screenshot references (dev server running)
 node tools/scenarios.mjs [world town ...]     # compare against references, optionally only some scenarios
-npx tsx tools/packs/upscale.ts --algo scale4x # Scale4x tile pack -> assets/packs/scale4x-derived
+npx tsx tools/packs/upscale.ts --algo scale2x # another derived pack -> assets/packs/scale2x-derived (extract builds scale4x/scale3x)
 ```
 
 - Tests that need the original game files use `tests/gamedir.ts` (`U4_GAME_DIR`, default GOG path) and are skipped when it is absent.
-- Headless tools (`tools/scenarios.mjs`, `tools/ui-shot.mjs`, `tools/page-eval.mjs`, `tools/page-errors.mjs`) drive a local Chrome via puppeteer-core against the running dev server; output goes to `test-output/` (git-ignored, contains original graphics).
+- Headless tools (`tools/scenarios.mjs`, `tools/ui-shot.mjs`, `tools/page-eval.mjs`, `tools/page-errors.mjs`) drive a local Chrome via puppeteer-core against the running dev server; output goes to `test-output/` (git-ignored, may contain original graphics).
 - Dev URL flags: `?skipintro` (start on the world map), `?debug` (F12 debug panel), `?lang=fr`, `?pack=<name>`, `?layout=classic` (the 1987 screen instead of the responsive one, src/ui/dom/hud.ts), `?title=classic` (TITLE.EXE's title instead of src/ui/dom/title.ts); the scenarios use both. In dev, `window.__game` exposes the `Game` instance and `window.__toDungeon(id)` jumps to a dungeon entrance; scenarios script the game through these.
 - Start Vite and headless runs from the PowerShell tool: the Bash tool is network-sandboxed. Restart Vite with `--force` after installing npm packages.
 - Write files containing backslashes (`\n`, `\u0012`, Windows paths) with Write/Edit, not Bash heredocs.
 
 ## Original-content rules (important)
 
-- The engine never reads the original binaries. `tools/extract-assets.ts` (EXEPACK unpacker in `tools/exe/`) converts them **once** into `assets/original/` (PNG, JSON maps, dialogues, tables, text catalogs); runtime code reads only that folder through `src/assets/store.ts`, which still names resources by their original file names (`LCB_1.ULT`, `GRASS.CON`...).
+- The engine never reads the original binaries. `tools/extract-assets.ts` (EXEPACK unpacker in `tools/exe/`) converts them into `assets/original/` (PNG, JSON maps, dialogues, tables, text catalogs); runtime code reads only `assets/` through `src/assets/store.ts`, which still names resources by their original file names (`LCB_1.ULT`, `GRASS.CON`...).
+- **Committed**: the JSON data of `assets/original/` (maps, talk, data, i18n/en, saves/party.new.json) and the translations in `assets/i18n/`. **Never committed or deployed** (git-ignored, left out of `dist/` by vite.config.ts unless `U4_BUNDLE_ORIGINALS=1` for a personal build): the original graphics `assets/original/{tiles,font,screens}/`, `assets/original/manifest.json`, `assets/original/saves/party.sav.json`, `assets/packs/*-derived/`, `test-output/`.
+- Without the graphics (`assets.originals` false, set from the manifest in main.ts) the game runs on the edition's PixelLab pack: `src/render/assets.ts` draws a stand-in classic atlas and indexed tiles from the layered pack, the modern font, the responsive layout and the port's title/creation are forced, and the settings grey out the classic choices. Anything new that needs an original picture must have an edition replacement (assets/packs/pixellab/art/).
 - **Never put original game text in source, not even in comments.** Original texts are declared by location only, via `defineTexts` in `src/data/text.ts` (e.g. `talk.youSay: 0x2a62`, a DS offset; `ptrs(ds, n)` for pointer tables). The extractor walks the same registry, so key list and offsets have one source of truth. Texts written for this port use `port()`/`portList()` and live in `src/i18n/game/<lang>/*.json`.
-- Git-ignored, derived from the game, must never be committed on public branches: `assets/original/`, `assets/i18n/` (translations of original texts/dialogues), `assets/packs/*-derived/`, `test-output/`.
-- Branches: `feature/modernization` is the public working branch. `local/bundled-assets` is local only (never pushed). After switching branches, run `npm run extract`, then `npm run assets:local` to restore local translations/packs.
 
 ## Architecture
 
-- `src/main.ts` bootstraps: config → UI language → asset manifest check → game language catalogs → tile pack → `Renderer` → `Game` → DOM shell, panels, pointer input → `installMagic`/`installItems` → rAF loop.
+- `src/main.ts` bootstraps: config → UI language → original graphics detection → game language catalogs → tile pack → `Renderer` → `Game` → DOM shell, panels, pointer input → `installMagic`/`installItems` → rAF loop.
 - **Game logic is async and input-driven.** `src/game/input.ts` is a key queue; game code `await`s keys (keyboard, command bar, touch all feed the same original keys). `game.ts` holds state (`save` = PARTY.SAV image), the main loop, movement and screen composition.
 - **Command registry** (`src/game/commands.ts`): every key command is registered per context (`world` | `town` | `dungeon` | `combat`) by its module (`actions.ts`, `places.ts`, `transport.ts`, `magic.ts`, `items.ts`, ...). The same list drives the help panel and the command bar; labels come from the UI catalog `cmd.<id>`.
 - **Layers** (`src/ui/layers.ts`): the base screen is the original layout (frame, 11×11 viewport, party panel, 16-column console). Modes (combat, dungeon, shops, visions, intro, endgame) `push` a layer providing `view`/`scene3d`/`status`/`draw`/`invert` and `remove()` it in a `finally`. The topmost layer providing a part wins.
@@ -52,7 +52,7 @@ npx tsx tools/packs/upscale.ts --algo scale4x # Scale4x tile pack -> assets/pack
 - `src/formats`: decoders of the original formats, used by the extractor and tests, not at runtime.
 - `src/data/tables.ts`: rule tables; `src/game/rng.ts` reproduces the original generator (seedable, used by scenarios).
 - `src/game/conversation`: dialogue providers (TLK-based; an LLM provider exists but is not enabled).
-- i18n: UI strings `src/i18n/ui/<lang>/*.json`, port-written game texts `src/i18n/game/<lang>/*.json`, translations of original texts `assets/i18n/<lang>/` (local only). Missing keys fall back to English. Follow `docs/TRANSLATING.md` (control chars, 16-column pre-wrapped texts, 4-letter keyword uniqueness, glossary).
+- i18n: UI strings `src/i18n/ui/<lang>/*.json`, port-written game texts `src/i18n/game/<lang>/*.json`, translations of original texts `assets/i18n/<lang>/`. Missing keys fall back to English. Follow `docs/TRANSLATING.md` (control chars, 16-column pre-wrapped texts, 4-letter keyword uniqueness, glossary).
 - `src-tauri`: Tauri v2 shell; saves and `config.json` go to the app data dir (browser mode: `localStorage`). Vite ignores `src-tauri/**` because Cargo locks crash the watcher.
 
 ## Conventions

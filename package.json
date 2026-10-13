@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "extract": "tsx tools/extract-assets.ts",
-    "assets:local": "git checkout local/bundled-assets -- assets/i18n assets/packs && git reset -q assets/i18n assets/packs",
     "tauri": "tauri",
     "deploy": "npm run build && npx wrangler deploy"
   },

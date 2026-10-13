@@ -1,13 +1,17 @@
 // Extracts everything the engine needs from an original Ultima IV (DOS/GOG) install into modern
 // formats under assets/original/. The engine never reads the original files: run this once.
 //
-//   npm run extract -- [--game-dir <dir>] [--out <dir>]
+//   npm run extract -- [--game-dir <dir>] [--out <dir>] [--no-packs]
 //
-// Default game dir: $U4_GAME_DIR or the GOG Galaxy location. The output is derived from the
-// original game: it is git-ignored on public branches.
+// Default game dir: $U4_GAME_DIR or the GOG Galaxy location. The maps, dialogues and texts it writes are
+// committed with the project (the game runs without an install); the original graphics (tiles/, font/,
+// screens/), manifest.json and the install's PARTY.SAV are git-ignored and never deployed (.gitignore,
+// vite.config.ts). Into assets/original/, it then builds the tile packs derived from the original tiles
+// (tools/packs/upscale.ts, assets/packs/*-derived/, git-ignored too) unless --no-packs.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { decodeCharset, decodeScreen, decodeTiles, EGA_PALETTE } from "../src/formats/ega";
 import { decodeCombat, decodeDungeon, decodeTown, decodeWorld } from "../src/formats/maps";
 import { decodeTalk } from "../src/formats/tlk";
@@ -129,4 +133,10 @@ if (isMain) {
   }
   fs.rmSync(outDir, { recursive: true, force: true });
   extractAll({ gameDir, outDir });
+  if (!process.argv.includes("--no-packs") && outDir === path.resolve("assets/original")) {
+    for (const algo of ["scale4x", "scale3x"]) {
+      const r = spawnSync(process.execPath, ["--import", "tsx", "tools/packs/upscale.ts", "--algo", algo], { stdio: "inherit" });
+      if (r.status !== 0) { console.error(`tile pack ${algo}-derived failed`); process.exit(1); }
+    }
+  }
 }

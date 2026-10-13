@@ -1,8 +1,11 @@
-// World map panel: the whole of WORLD.MAP drawn with the current tile pack, with zoom (wheel, buttons,
+// World map panel: the whole of WORLD.MAP drawn with the current tile pack (a layered pack composes it as its
+// map views do, terrain transitions included, refined in the background), with zoom (wheel, buttons,
 // pinch, + / -) and pan (drag, arrow keys), the party (blinking) and the discovered places of the
 // journal (src/game/journal.ts), listed beside the map (a click centres the map on the place).
 import type { Game } from "../../game/game";
 import type { LoadedPack } from "../../assets/store";
+import { BLOCK } from "../../render/layered";
+import type { Renderer } from "../../render/renderer";
 import { t } from "../../i18n/i18n";
 import { journalOf, PLACES, partyWorldPos, placeName, type Place, type PlaceKind } from "../../game/journal";
 import { h } from "../dom/dom";
@@ -26,6 +29,8 @@ const COLORS: Record<PlaceKind, string> = {
 
 interface MapImages { big: HTMLCanvasElement; small: HTMLCanvasElement }
 let cache: { pack: LoadedPack; tiles: Uint8Array; images: MapImages } | null = null;
+/** Called when the background composition of a layered pack's map has drawn more of it. */
+const refined = new Set<() => void>();
 
 function canvas(w: number, hgt: number): HTMLCanvasElement {
   const c = document.createElement("canvas");
@@ -63,9 +68,15 @@ function mapImages(pack: LoadedPack, tiles: Uint8Array, layered: Uint32Array | n
   }
   const big = canvas(size, size);
   big.getContext("2d")!.putImageData(img, 0, 0);
-  // overview: halved twice with smoothing (one big step would skip pixels)
+  const images = { big, small: overview(big) };
+  cache = { pack, tiles, images };
+  return images;
+}
+
+/** The overview: halved with smoothing until SMALL pixels per tile (one big step would skip pixels). */
+function overview(big: HTMLCanvasElement): HTMLCanvasElement {
   let small = big;
-  for (let s = size / 2; s >= W * SMALL; s /= 2) {
+  for (let s = big.width / 2; s >= W * SMALL; s /= 2) {
     const c = canvas(s, s);
     const ctx = c.getContext("2d")!;
     ctx.imageSmoothingEnabled = true;
@@ -73,9 +84,35 @@ function mapImages(pack: LoadedPack, tiles: Uint8Array, layered: Uint32Array | n
     ctx.drawImage(small, 0, 0, s, s);
     small = c;
   }
-  const images = { big, small };
-  cache = { pack, tiles, images };
-  return images;
+  return small;
+}
+
+/**
+ * Redraws the map of a layered pack as its views compose it (the first picture is made of one thumbnail per
+ * tile, without transitions between terrains), a few blocks per frame so that the panel stays responsive.
+ * Stops when the cached map changes (another pack or map).
+ */
+async function refine(r: Renderer, entry: NonNullable<typeof cache>) {
+  const view = r.offscreenLayered();
+  if (!view) return;
+  const ctx = entry.images.big.getContext("2d")!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  const blocks: [number, number][] = [];
+  for (let by = 0; by < W; by += BLOCK) for (let bx = 0; bx < W; bx += BLOCK) blocks.push([bx, by]);
+  let start = performance.now();
+  for (const [bx, by] of blocks) {
+    if (cache !== entry) return;
+    view.drawMapBlock(entry.tiles, W, bx, by, ctx, BIG);
+    if (performance.now() - start > 12) {
+      for (const f of refined) f();
+      await new Promise(requestAnimationFrame);
+      start = performance.now();
+    }
+  }
+  if (cache !== entry) return;
+  entry.images.small = overview(entry.images.big);
+  for (const f of refined) f();
 }
 
 // ---------------------------------------------------------------- panel
@@ -124,11 +161,14 @@ function mount(g: Game, body: HTMLElement): { dispose: () => void; onKey: (e: Ke
 
   const sameMap = cache && cache.pack === g.r.assets.pack && cache.tiles === g.world.tiles;
   const images = mapImages(g.r.assets.pack, g.world.tiles, sameMap ? null : g.r.layeredAtlas(BIG));
+  if (!sameMap && g.r.layered) void refine(g.r, cache!);
   const ctx = cv.getContext("2d")!;
   let vw = 1, vh = 1, dpr = 1;
   let ppt = lastPpt || 8, cx = 128, cy = 128;
   let selected: string | null = null;
   let dirty = true;
+  const onRefined = () => { dirty = true; };
+  refined.add(onRefined);
 
   const party = () => {
     const p = partyWorldPos(journal.state());
@@ -401,6 +441,7 @@ function mount(g: Game, body: HTMLElement): { dispose: () => void; onKey: (e: Ke
     onKey,
     dispose() {
       cancelAnimationFrame(raf);
+      refined.delete(onRefined);
       ro.disconnect();
       offJournal();
       clearTimeout(tipTimer);

@@ -1,10 +1,11 @@
 // Single access point to the game resources. Everything comes from the asset folder; the engine
 // never reads the original files:
-//   assets/original/   produced by `npm run extract` from the original install
+//   assets/original/   produced by `npm run extract` from the original install: the maps, dialogues,
+//                      tables and texts are committed; the graphics (tiles/, font/, screens/) and
+//                      manifest.json are git-ignored and only exist after an extraction (`originals`)
 //   assets/i18n/<lang>/ translations of the original texts and dialogues (game.json, talk/*.json)
-//   assets/packs/<name>/ other tile packs (HD...)
-// assets/original, the translations and the derived packs come from the original game: they are
-// git-ignored on the public branches.
+//   assets/packs/<name>/ other tile packs (the edition's PixelLab pack; *-derived, from the original
+//                      tiles, git-ignored)
 // Callers still name resources by their original file names ("LCB_1.ULT", "GRASS.CON"...), which the
 // store maps to the extracted JSON/PNG files.
 import type { IndexedImage } from "../formats/ega";
@@ -116,6 +117,18 @@ export class AssetStore {
     try { return await this.json<AssetManifest>("manifest.json"); } catch { return null; }
   }
 
+  /**
+   * True when the original graphics (tiles, font, full-screen pictures) have been extracted. The repository
+   * ships the maps, dialogues and texts only; without the graphics the edition's pack stands in for them
+   * (src/render/assets.ts). Set by main() before anything loads.
+   */
+  originals = false;
+
+  async detectOriginals(): Promise<boolean> {
+    const m = await this.manifest();
+    return this.originals = !!m?.files.includes("tiles/original/tiles.png");
+  }
+
   // --- graphics
 
   tilePack(name = "original"): Promise<TilePack> {
@@ -126,15 +139,10 @@ export class AssetStore {
    * Loads a pack's atlas as RGBA (any pack, including HD ones). A layered pack (format 2) loads its
    * images and its fallback classic pack ("original" if that one is missing).
    */
-  async loadPack(name = "original"): Promise<LoadedPack> {
+  async loadPack(name = "original", standIn?: (layered: LayeredPack) => LoadedPack): Promise<LoadedPack> {
     const pack = await this.tilePack(name);
     if ((pack as unknown as { format?: number }).format !== 2) return this.loadClassic(name, pack);
     const def = pack as unknown as LayeredPackDef;
-    let fallback: LoadedPack;
-    try { fallback = await this.loadClassic(def.fallback ?? "original"); } catch (e) {
-      console.warn(`fallback pack "${def.fallback}" of "${name}" unavailable, using the original tiles`, e);
-      fallback = await this.loadClassic("original");
-    }
     const img = async (rel: string) =>
       createImageBitmap(await (await this.fetch(`packs/${name}/${rel}`)).blob(), { colorSpaceConversion: "none" });
     const [base, layers, sprites, tiles] = await Promise.all([
@@ -143,7 +151,15 @@ export class AssetStore {
       Promise.all(def.sprites.map((s) => img(s.image))),
       Promise.all((def.tiles ?? []).map((t) => img(t.image))),
     ]);
-    return { ...fallback, layered: { def, base, layers, sprites, tiles } };
+    const layered: LayeredPack = { def, base, layers, sprites, tiles };
+    // without the original graphics, the classic atlas is drawn from the layered pack itself (`standIn`)
+    if (standIn) return { ...standIn(layered), layered };
+    let fallback: LoadedPack;
+    try { fallback = await this.loadClassic(def.fallback ?? "original"); } catch (e) {
+      console.warn(`fallback pack "${def.fallback}" of "${name}" unavailable, using the original tiles`, e);
+      fallback = await this.loadClassic("original");
+    }
+    return { ...fallback, layered };
   }
 
   private async loadClassic(name: string, known?: TilePack): Promise<LoadedPack> {

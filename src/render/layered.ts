@@ -19,6 +19,8 @@ const SIGN_FIRST = T.LETTER_A, SIGN_LAST = 0x7e, LETTER_Z = 0x79;
 const isSign = (t: number) => t >= SIGN_FIRST && t <= SIGN_LAST;
 
 const N = 11, G = N + 2;
+/** Cells kept per view by drawMapBlock (the view less a margin of one cell). */
+export const BLOCK = N - 2;
 /** Orthogonal neighbours, in tie-break order. */
 const NEIGHBOURS = [[0, -1], [-1, 0], [1, 0], [0, 1]] as const;
 
@@ -237,6 +239,22 @@ export class LayeredView {
     const S = this.S, mid = (N >> 1) * S;
     g.drawImage(this.canvas, mid, mid, S, S, 0, 0, size, size);
     return c;
+  }
+
+  /**
+   * Draws the BLOCK x BLOCK cells of a wrapping square map (`side` cells, row-major) from (bx, by) on `out` at
+   * `ppt` pixels per cell, as a full view would show them (terrain transitions, places, the edition's signs).
+   * Only the inner cells of the 11-cell view are kept: a sprite overflowing its cell (Lord British's castle is
+   * three cells wide) is drawn whole by the view that holds its cell in the margin. Redraws this.canvas.
+   */
+  drawMapBlock(map: ArrayLike<number>, side: number, bx: number, by: number, out: CanvasRenderingContext2D, ppt: number) {
+    const at = (x: number, y: number) => map[(((y % side) + side) % side) * side + (((x % side) + side) % side)];
+    const tiles = new Array<number>(N * N), ground = new Array<number>(G * G);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) tiles[j * N + i] = at(bx - 1 + i, by - 1 + j);
+    for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) ground[j * G + i] = at(bx - 2 + i, by - 2 + j);
+    this.draw(tiles, ground, 0, bx - 1);
+    const S = this.S;
+    out.drawImage(this.canvas, S, S, BLOCK * S, BLOCK * S, bx * ppt, by * ppt, BLOCK * ppt, BLOCK * ppt);
   }
 
   /**

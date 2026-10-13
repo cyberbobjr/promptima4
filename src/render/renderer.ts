@@ -232,6 +232,12 @@ export class Renderer {
     return new Uint32Array(g.getImageData(0, 0, c.width, c.height).data.buffer);
   }
 
+  /** A view of the layered pack of its own (offscreen pictures: the world map), or null without one. */
+  offscreenLayered(): LayeredView | null {
+    if (!this.layeredView || !this.atlasCanvas) return null;
+    return new LayeredView(this.layeredView.pack, this.atlasCanvas.canvas, this.tileSize);
+  }
+
   /** True with a layered tile pack: setView then uses the ground (13x13) and the origin. */
   get layered(): boolean { return this.layeredView !== null; }
 

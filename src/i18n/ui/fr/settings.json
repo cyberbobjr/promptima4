@@ -20,6 +20,8 @@
   "settings.font.original": "Originale 8x8",
   "settings.font.modern": "Moderne",
   "settings.fontHint": "Automatique : la police originale en anglais avec les tuiles originales, la moderne sinon (accents, HD).",
+  "settings.needsOriginals": "nécessite les fichiers originaux",
+  "settings.originalsHint": "La police, les tuiles et les écrans de 1987 originaux nécessitent le jeu original : lancez npm run extract (voir le README).",
   "settings.controls": "Commandes",
   "settings.commandBar": "Barre de commandes",
   "settings.bar.auto": "Automatique",

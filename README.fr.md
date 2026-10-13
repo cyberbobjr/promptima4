@@ -10,25 +10,38 @@ et décompilation avec Ghidra des exécutables (`AVATAR.EXE`, après suppression
 EXEPACK, et `TITLE.EXE`). Les règles, formules et tables citent en commentaire les adresses des
 fonctions originales (`1000:xxxx`) et des données (`DS:xxxx`). Voir `docs/RE_NOTES.md`.
 
-## Il faut les fichiers du jeu original
+## Données du jeu et graphismes originaux
 
 Aucun code original n'est exécuté (pas de DOSBox, pas d'émulation), et le moteur ne lit pas non plus
-les fichiers originaux : leur contenu est **extrait une seule fois** dans des formats modernes (images
-PNG, cartes, dialogues, tables et catalogues de textes en JSON) par un outil TypeScript, et le jeu ne
-lit que ce dossier.
+les fichiers originaux : leur contenu a été **extrait** dans des formats modernes par un outil
+TypeScript, et le jeu ne lit que `assets/`.
 
-Ces fichiers **ne sont pas inclus** dans ce dépôt. Ultima IV est disponible gratuitement sur GOG.
-Après l'avoir installé, lancez une fois :
+**Fourni avec le dépôt** : les cartes, dialogues, tables et catalogues de textes extraits du jeu
+(`assets/original/`, en JSON), leurs traductions françaises (`assets/i18n/`), et les graphismes, sons et
+musiques propres à l'édition 2026 (pack de tuiles et illustrations PixelLab, effets ElevenLabs, morceaux
+Suno). Un clone frais se joue tel quel, avec le style de l'édition.
+
+**Non fourni** : les graphismes originaux (tuiles EGA, police 8x8, images plein écran) et les packs de
+tuiles qui en dérivent. Si vous possédez Ultima IV (gratuit sur GOG), extrayez-les une fois pour jouer
+avec le style de 1987 (*Options* : pack `original` ou `scale4x-derived`, police originale, écran et
+titre de 1987) :
 
 ```powershell
 npm run extract -- --game-dir "C:\Program Files\GOG Galaxy\Games\Ultima 4"
 ```
 
 L'outil (`tools/extract-assets.ts`) décompresse `AVATAR.EXE` (EXEPACK) en mémoire, lit ses textes et
-ceux de `TITLE.EXE` aux offsets déclarés dans le code, et écrit `assets/original/` (ignoré par git).
-Sans `--game-dir`, il utilise `U4_GAME_DIR` ou l'emplacement GOG Galaxy ci-dessus. L'installation
-originale n'est jamais modifiée : les sauvegardes vont dans le dossier de données de l'application
-(Tauri) ou dans le `localStorage` (mode navigateur).
+ceux de `TITLE.EXE` aux offsets déclarés dans le code et réécrit `assets/original/` (les fichiers JSON
+versionnés ressortent inchangés de la version GOG). Il y ajoute les graphismes originaux et construit
+les packs Scale4x et Scale3x (`assets/packs/*-derived/`, `--no-packs` les saute) ; tout cela est ignoré
+par git. Sans `--game-dir`, il utilise `U4_GAME_DIR` ou l'emplacement GOG Galaxy ci-dessus.
+L'installation originale n'est jamais modifiée : les sauvegardes vont dans le dossier de données de
+l'application (Tauri) ou dans le `localStorage` (mode navigateur).
+
+Un build laisse les graphismes originaux hors de `dist/` même s'ils ont été extraits : un site déployé
+ne les sert donc jamais. Pour un build personnel qui les inclut (votre propre application de bureau),
+définissez `U4_BUNDLE_ORIGINALS=1` avant `npm run build` / `npm run tauri build`, et ne le distribuez
+pas.
 
 Le code source déclare seulement *où* se trouve chaque texte original (par exemple
 `talk.youSay: 0x2a62`, un offset DS dans `AVATAR.EXE`) ; les textes viennent du catalogue extrait.
@@ -47,7 +60,7 @@ npm run dev         # navigateur seul : http://127.0.0.1:1420
 npm run build       # vérification des types + bundle de production
 npm test            # tests unitaires (Vitest) ; ceux des formats sont ignorés sans installation
 node tools/scenarios.mjs [--ref]  # non-régression par captures headless (serveur de dev lancé)
-npx tsx tools/packs/upscale.ts --algo scale4x  # pack HD (Scale4x) dans assets/packs/scale4x-derived, à choisir dans Options
+npx tsx tools/packs/upscale.ts --algo scale2x  # un pack de plus dérivé des tuiles extraites (assets/packs/scale2x-derived)
 ```
 
 Git Bash : `export PATH="/e/IdeaProjects/u4/.nodeenv/Scripts:$PATH"`, puis les mêmes commandes.

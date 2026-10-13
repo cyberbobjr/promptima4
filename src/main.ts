@@ -8,7 +8,7 @@ import { installItems } from "./game/items";
 import { setSeed } from "./game/rng";
 import { advanceClock, useManualClock } from "./game/clock";
 import { assets as store } from "./assets/store";
-import { loadGameLang, setUiLang, t } from "./i18n/i18n";
+import { loadGameLang, setUiLang } from "./i18n/i18n";
 import { MODERN_FONT, type FontMode } from "./render/renderer";
 import "./data/all-texts";
 import { MSG_CORE } from "./game/texts/core";
@@ -28,13 +28,16 @@ async function main() {
   const canvas = document.getElementById("screen") as HTMLCanvasElement;
   const cfg = await loadConfig();
   setUiLang(cfg.lang.ui);
-  if (!(await store.manifest())) throw new Error(t("app.notExtracted", { dir: "C:\\Program Files\\GOG Galaxy\\Games\\Ultima 4" }));
+  // the maps, dialogues and texts ship with the project; the original graphics only after `npm run extract`
+  const originals = await store.detectOriginals();
   await loadGameLang(store, cfg.lang.game);
-  const packName = new URLSearchParams(location.search).get("pack") ?? cfg.tiles.pack;
+  const params = new URLSearchParams(location.search);
+  const packName = params.get("pack") ?? cfg.tiles.pack;
   const assets = await loadAssets(packName);
   const renderer = new Renderer(canvas, assets);
   // "auto": the original font for English with the original tiles, the modern one otherwise (accents, HD)
-  const font: FontMode = cfg.display.font !== "auto" ? cfg.display.font
+  // without the original graphics there is no original font: the modern one
+  const font: FontMode = !originals ? "modern" : cfg.display.font !== "auto" ? cfg.display.font
     : cfg.lang.game === "en" && cfg.lang.ui === "en" && packName === "original" ? "original" : "modern";
   if (font === "modern") {
     const face = new FontFace(MODERN_FONT, `url(${import.meta.env.BASE_URL}fonts/PressStart2P-Regular.ttf)`);
@@ -48,13 +51,13 @@ async function main() {
   installPanels(shell, game);
   installPointer(shell, game);
   installMusic(game);
-  // ?title= and ?layout= (classic|modern) override the settings (the screenshot scenarios use the 1987 screens)
-  const params = new URLSearchParams(location.search);
-  if ((params.get("title") ?? cfg.display.title) !== "classic") {
+  // ?title= and ?layout= (classic|modern) override the settings (the screenshot scenarios use the 1987 screens);
+  // the 1987 screens need the original graphics
+  if (!originals || (params.get("title") ?? cfg.display.title) !== "classic") {
     game.modernTitle = createModernTitle(shell.overlay, game);
     game.modernCreation = createModernCreation(shell.overlay, game);
   }
-  if ((params.get("layout") ?? cfg.display.layout) !== "classic") installHud(shell, game);
+  if (!originals || (params.get("layout") ?? cfg.display.layout) !== "classic") installHud(shell, game);
   renderer.resize();
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game; // used by automated tests
   if (import.meta.env.DEV) (window as unknown as { __speaker: typeof speaker }).__speaker = speaker;

@@ -20,6 +20,8 @@
   "settings.font.original": "Original 8x8",
   "settings.font.modern": "Modern",
   "settings.fontHint": "Automatic: the original font for English with the original tiles, the modern one otherwise (accents, HD).",
+  "settings.needsOriginals": "needs the original files",
+  "settings.originalsHint": "The original font, tiles and 1987 screens need the original game: run npm run extract (see the README).",
   "settings.controls": "Controls",
   "settings.commandBar": "Command bar",
   "settings.bar.auto": "Automatic",

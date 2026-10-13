@@ -5,3 +5,13 @@ src-tauri/gen/
 .nodeenv/
 test-output/
 .env
+
+# Produced by `npm run extract` from the original game and never committed: the original graphics (tiles,
+# font, full-screen pictures), the manifest announcing them, the install's own PARTY.SAV and the tile packs
+# derived from the original tiles. The maps, dialogues and texts of assets/original/ are committed.
+assets/original/manifest.json
+assets/original/tiles/
+assets/original/font/
+assets/original/screens/
+assets/original/saves/party.sav.json
+assets/packs/*-derived/

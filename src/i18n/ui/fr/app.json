@@ -1,4 +1,3 @@
 {
-  "app.title": "Ultima IV",
-  "app.notExtracted": "Les ressources du jeu n'ont pas encore été extraites.\n\nLancez une fois, depuis le dossier du projet :\n  npm run extract -- --game-dir \"<votre installation d'Ultima IV>\"\n\n(installation par défaut : {dir})"
+  "app.title": "Ultima IV"
 }
