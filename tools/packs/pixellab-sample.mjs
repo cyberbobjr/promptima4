@@ -3,6 +3,7 @@
 //
 //   node tools/packs/pixellab-sample.mjs terrain [seed]     terrain set (create-tiles-pro)
 //   node tools/packs/pixellab-sample.mjs sprite <name>      64 candidates of one sprite (generate-image-v2)
+//   node tools/packs/pixellab-sample.mjs headless [seed]    headless brute: inpainted stump + idle animation
 //
 // Raw responses and images go to test-output/pixellab/sample/ (local).
 import fs from "node:fs";
@@ -109,12 +110,76 @@ export const CHARACTERS = {
 /** Quadrupeds animated with an animal skeleton in the PixelLab UI (default: mannequin). */
 const TEMPLATE = { bull: "horse", rat: "cat" };
 
-/** Map places and objects drawn over the terrain (transparent background), 64 candidates each. */
+/**
+ * Map places and objects drawn over the terrain (transparent background), 64 candidates each. A string is a
+ * world map place; an object gives `desc`, the contact sheet `ground` (GROUNDS key), `suffix` (replaces
+ * "overworld map icon") and `ref` (name of a picked sprite given as subject reference: same object, another view).
+ */
+const OBJ = "game object, low top-down view";
 export const SPRITES = {
   town: "small walled medieval town seen from above, stone wall ring, red tiled roofs, gate",
   castle: "small white stone castle seen from above, four corner towers, blue roofs, red flags, gate",
   shrine: "small circle of white standing stones with a glowing ankh in the middle, seen from above",
   dungeon: "dark cave entrance in a grey rock mound with a wooden frame, seen from above",
+  // transports (0x10-0x13 ship, 0x80-0x83 pirate ship, 0x14/0x15 horse, 0x18 balloon); W is drawn, E mirrored
+  ship: { desc: "wooden sailing ship with white square sails and a small red pennant, side view, the bow points to the left, sailing to the left, no water", ground: "sea", suffix: OBJ },
+  "ship-n": { desc: "the same wooden sailing ship seen from behind, sailing away from the viewer, stern in front, white square sails seen from the back, no water", ground: "sea", suffix: OBJ, ref: "ship" },
+  "ship-s": { desc: "the same wooden sailing ship seen from the front, sailing toward the viewer, bow in front, white square sails seen from the front, no water", ground: "sea", suffix: OBJ, ref: "ship" },
+  pirate: { desc: "pirate sailing ship with black tattered sails and a black flag, dark wooden hull, side view, the bow points to the left, sailing to the left, no water", ground: "sea", suffix: OBJ },
+  "pirate-n": { desc: "the same pirate ship seen from behind, sailing away from the viewer, stern in front, black sails seen from the back, no water", ground: "sea", suffix: OBJ, ref: "pirate" },
+  "pirate-s": { desc: "the same pirate ship seen from the front, sailing toward the viewer, bow in front, black sails seen from the front, no water", ground: "sea", suffix: OBJ, ref: "pirate" },
+  horse: { desc: "brown horse with a black mane and a leather saddle, standing, side view facing left, four legs, no rider", ground: "grass", suffix: OBJ },
+  balloon: { desc: "hot-air balloon with a red and yellow striped envelope and a wicker basket, floating", ground: "grass", suffix: OBJ },
+  // world map places
+  village: "small hamlet of three tiny cottages with red tiled roofs seen from above, no wall",
+  ruins: "crumbled ruins of a small stone building seen from above, broken grey walls and fallen stones",
+  bridge: { desc: "short wooden plank bridge seen from straight above, spanning from the left edge to the right edge of the image, planks running vertically, wooden railings along its top and bottom sides", ground: "shallows", suffix: "top-down game tile" },
+  moongate: { desc: "moongate: a tall upright arch of shimmering glowing blue magical light, a portal, standing on the ground, blue glow", ground: "grass", suffix: OBJ },
+  // objects on town, combat and dungeon floors
+  ankh: { desc: "white marble ankh statue on a small stone base", ground: "brick", suffix: OBJ },
+  campfire: { desc: "campfire: burning logs with orange flames inside a ring of grey stones", ground: "grass", suffix: OBJ },
+  chest: { desc: "closed wooden treasure chest with gold metal bands and a lock", ground: "brick", suffix: OBJ },
+  // seed 1 ("fallen dead adventurer lying face down on the ground, still, cloak spread") read as crouching
+  // figures; seed 2 uses this description
+  corpse: { desc: "remains of a dead adventurer lying flat on the ground seen from above: skull, scattered bones and a torn cloak", ground: "brick", suffix: "game object, top-down view" },
+  rocks: { desc: "small pile of three grey boulders", ground: "grass", suffix: OBJ },
+  column: { desc: "round white marble column pillar, thick, standing", ground: "brick", suffix: OBJ },
+  altar: { desc: "stone altar table covered with a red cloth, two lit candles", ground: "brick", suffix: OBJ },
+  "ladder-up": { desc: "wooden ladder standing upright, leaning up toward a bright opening above", ground: "dungeon", suffix: OBJ },
+  "ladder-down": { desc: "top of a wooden ladder going down into a dark square hole in the floor", ground: "dungeon", suffix: OBJ },
+};
+/** Contact sheet grounds: picked terrain or tile files (relative to OUT). */
+const GROUNDS = { grass: "terrain-1/8.png", sea: "tileset-deep/1111.png", shallows: "tileset-shallows/1111.png", brick: "tiles-paving-1/5.png", dungeon: "tiles-floors-1/4.png" };
+
+/**
+ * Opaque full-cell tiles (towns, combat and dungeon rooms), one create-tiles-pro call per set so a set shares
+ * its palette: `tiles <set> [seed]` -> tiles-<set>-<seed>/<i>.png.
+ */
+export const TILESETS = {
+  floors: [
+    "grey cobblestone brick floor paving, small rectangular bricks",
+    "wooden plank floor, horizontal planks",
+    "dark dungeon floor of large worn flagstones",
+    "solid wall of red brick blocks seen from above",
+    "solid dark grey bedrock, impassable rock",
+    "rubble: broken stones and gravel over packed earth",
+    "closed wooden door with iron hinges in a red brick wall",
+    "closed wooden door with a heavy iron lock and iron bands in a red brick wall",
+  ],
+  // town street floor alternatives (floors-1/0, grey bricks, looked too much like a wall)
+  paving: [
+    "warm beige stone paving of small square flagstones, town street floor",
+    "sandy cobblestone street, rounded light stones",
+    "pale grey herringbone brick pavement, town square floor",
+    "light terracotta tiled floor, square tiles with thin grout",
+  ],
+  fields: [
+    "bubbling molten lava with glowing orange cracks",
+    "poison field: swirling toxic green mist",
+    "energy field: crackling blue lightning energy",
+    "fire field: roaring red and orange flames",
+    "sleep field: shimmering magenta and purple magic sparkles",
+  ],
 };
 
 /** Style reference for every sprite: the Avatar (outline, detail and shading, not its colours). */
@@ -146,19 +211,63 @@ async function contactSheet(dir, out, groundFile) {
 
 const [cmd, arg] = process.argv.slice(2);
 if (cmd === "sprite") {
-  const name = `sprite-${arg}`;
+  // `sprite <name> [seed]`: seed 1 writes sprite-<name>/, another seed sprite-<name>-<seed>/
+  const seed = Number(process.argv[4] ?? 1);
+  const name = `sprite-${arg}${seed === 1 ? "" : `-${seed}`}`;
+  const s = typeof SPRITES[arg] === "string" ? { desc: SPRITES[arg] } : SPRITES[arg];
+  const picks = JSON.parse(fs.readFileSync(path.resolve("tools/packs/pixellab-picks.json"), "utf8"));
   const r = await job("/generate-image-v2", {
-    description: `${SPRITES[arg]}, overworld map icon, ${STYLE}`,
+    description: `${s.desc}, ${s.suffix ?? "overworld map icon"}, ${STYLE}`,
     image_size: { width: SIZE, height: SIZE },
     no_background: true,
     style_image: styleRef(),
     style_options: { color_palette: false, outline: true, detail: true, shading: true },
-    seed: 1,
+    ...(s.ref ? { reference_images: [{ image: b64(pickedSprite(picks, s.ref)), size: { width: SIZE, height: SIZE } }] } : {}),
+    seed,
   }, name);
   const imgs = images(r.last_response ?? r);
   imgs.forEach((img, i) => save(img, path.join(OUT, name, `${i}.png`)));
-  await contactSheet(path.join(OUT, name), path.join(OUT, `${name}-sheet.png`), path.join(OUT, "terrain-1", "8.png"));
+  await contactSheet(path.join(OUT, name), path.join(OUT, `${name}-sheet.png`), path.join(OUT, GROUNDS[s.ground ?? "grass"]));
   console.log(`${name}: ${imgs.length} candidates; usage ${JSON.stringify(r.usage)}`);
+}
+/** File of a picked sprite: picks.sprites[name] is a candidate index, or "<dir suffix>/<index>" for another seed. */
+function pickedSprite(picks, name) {
+  const p = String(picks.sprites[name]), [dir, i] = p.includes("/") ? p.split("/") : ["", p];
+  return path.join(OUT, `sprite-${name}${dir ? `-${dir}` : ""}`, `${i}.png`);
+}
+if (cmd === "tiles") {
+  const seed = Number(process.argv[4] ?? 1);
+  const name = `tiles-${arg}-${seed}`;
+  const r = await job("/create-tiles-pro", {
+    description: TILESETS[arg].map((d, i) => `${i + 1}). ${d}`).join(" ") + `. Seamless tileable top-down tiles filling the whole square edge to edge, for a town and dungeon map, ${STYLE}`,
+    tile_type: "square_topdown",
+    tile_size: SIZE,
+    tile_view: "top-down",
+    outline_mode: "segmentation",
+    seed,
+  }, name);
+  const tiles = await call("GET", `/tiles-pro/${r.last_response.tile_id}`);
+  const urls = Object.entries(tiles.storage_urls ?? {});
+  fs.mkdirSync(path.join(OUT, name), { recursive: true });
+  for (const [key, url] of urls) fs.writeFileSync(path.join(OUT, name, `${key.replace("tile_", "")}.png`), Buffer.from(await (await fetch(url)).arrayBuffer()));
+  await tileSheet(path.join(OUT, name), path.join(OUT, `${name}-sheet.png`));
+  console.log(`${name}: ${urls.length} tiles; usage ${JSON.stringify(r.usage)}`);
+}
+/** Each tile 3x3 (seams), zoomed 2x, 4 per row, labelled by position. */
+async function tileSheet(dir, out) {
+  const { PNG } = await import("pngjs");
+  const files = fs.readdirSync(dir).filter((f) => /^\d+\.png$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b));
+  const Z = 2, C = 3 * SIZE * Z + 8, sheet = new PNG({ width: 4 * C, height: Math.ceil(files.length / 4) * C });
+  sheet.data.fill(200);
+  files.forEach((f, i) => {
+    const img = PNG.sync.read(fs.readFileSync(path.join(dir, f)));
+    const x0 = (i % 4) * C + 4, y0 = Math.floor(i / 4) * C + 4;
+    for (let y = 0; y < 3 * SIZE * Z; y++) for (let x = 0; x < 3 * SIZE * Z; x++) {
+      const s = ((Math.floor(y / Z) % img.height) * img.width + Math.floor(x / Z) % img.width) * 4, d = ((y0 + y) * sheet.width + x0 + x) * 4;
+      img.data.copy(sheet.data, d, s, s + 3); sheet.data[d + 3] = 255;
+    }
+  });
+  fs.writeFileSync(out, PNG.sync.write(sheet));
 }
 // `characters`: every character not created yet (a south view on disk means done)
 const todo = cmd === "characters" ? Object.keys(CHARACTERS).filter((k) => !fs.existsSync(path.join(OUT, `character-${k}-south.png`)))
@@ -282,6 +391,40 @@ if (cmd === "animate") {
     for (const j of jobs) await waitJob(j);
     if (!(await downloadIdle(name, id))) console.log(`animation ${name}: no frames after the job (${JSON.stringify(r).slice(0, 300)})`);
   } catch (e) { console.log(`animation ${name}: ${e.message}`); }
+}
+
+/**
+ * `headless [seed]`: create-character-v3 always draws a head, whatever the description. The head of a generated
+ * brute (headless-base.png, the first "headless" character) is erased and only the neck area is inpainted as a
+ * stump, so the model has no room for a head; the result is animated from that frame (animate-with-text-v3,
+ * drift correction on every frame, otherwise the stump grows back into a head). About 11 generations.
+ */
+if (cmd === "headless") {
+  const { PNG } = await import("pngjs");
+  const seed = Number(arg ?? 2);
+  const im = PNG.sync.read(fs.readFileSync(path.join(OUT, "headless-base.png")));
+  for (let y = 0; y <= 7; y++) for (let x = 11; x <= 20; x++) if (y < 7 || (x >= 13 && x <= 18)) im.data[(y * SIZE + x) * 4 + 3] = 0;
+  const mask = new PNG({ width: SIZE, height: SIZE });
+  for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
+  for (let y = 6; y <= 9; y++) for (let x = 12; x <= 19; x++) mask.data.set([255, 255, 255, 255], (y * SIZE + x) * 4);
+  const sized = (png) => ({ image: b64(PNG.sync.write(png)), size: { width: SIZE, height: SIZE } });
+  const r = await job("/inpaint-v3", {
+    description: "bloody red neck stump between broad flat shoulders, the head was cut off, nothing above the shoulders",
+    inpainting_image: sized(im), mask_image: sized(mask), no_background: true, crop_to_mask: true, seed,
+  }, "headless-inpaint");
+  const south = path.join(OUT, "character-headless-south.png");
+  const inp = r.last_response ?? r;
+  save(inp.image ?? inp.images[0], south);
+  const a = await job("/animate-with-text-v3", {
+    first_frame: b64(south), action: "subtle idle breathing, the shoulders rise and fall slightly, the body stays in place, it has no head",
+    frame_count: 8, no_background: true, seed: 2, drift_threshold: 0,
+  }, "headless-anim");
+  // the first image returned is the reference frame itself
+  const frames = (a.last_response ?? a).images.slice(1);
+  const dir = path.join(OUT, "anim", "headless");
+  fs.rmSync(dir, { recursive: true, force: true });
+  frames.forEach((img, i) => save(img, path.join(dir, `${i + 1}.png`)));
+  console.log(`headless: ${frames.length} frames`);
 }
 
 if (cmd === "scene") await scene();

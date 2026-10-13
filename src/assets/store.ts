@@ -34,6 +34,8 @@ export interface LayeredPackDef {
   underlay?: Record<string, number>;
   groundOnly?: Record<string, number>;
   sprites: { name: string; ids: number[]; image: string; w: number; h: number; frames: number; dy?: number }[];
+  /** Opaque full cells drawn instead of the fallback for these ids (frames in one row, optional scroll). */
+  tiles?: { name: string; ids: number[]; image: string; frames: number; scroll?: [number, number] }[];
 }
 
 /** A layered pack with its images decoded. */
@@ -44,6 +46,8 @@ export interface LayeredPack {
   layers: { image: ImageBitmap; fill: ImageBitmap | null }[];
   /** Same order as def.sprites. */
   sprites: ImageBitmap[];
+  /** Same order as def.tiles (empty without that section). */
+  tiles: ImageBitmap[];
 }
 
 /**
@@ -125,12 +129,13 @@ export class AssetStore {
     }
     const img = async (rel: string) =>
       createImageBitmap(await (await this.fetch(`packs/${name}/${rel}`)).blob(), { colorSpaceConversion: "none" });
-    const [base, layers, sprites] = await Promise.all([
+    const [base, layers, sprites, tiles] = await Promise.all([
       img(def.base.image),
       Promise.all(def.layers.map(async (l) => ({ image: await img(l.image), fill: l.fill ? await img(l.fill) : null }))),
       Promise.all(def.sprites.map((s) => img(s.image))),
+      Promise.all((def.tiles ?? []).map((t) => img(t.image))),
     ]);
-    return { ...fallback, layered: { def, base, layers, sprites } };
+    return { ...fallback, layered: { def, base, layers, sprites, tiles } };
   }
 
   private async loadClassic(name: string, known?: TilePack): Promise<LoadedPack> {

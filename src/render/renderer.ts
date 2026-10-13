@@ -192,7 +192,7 @@ export class Renderer {
     if (this.layeredView && this.layeredMesh) {
       this.layeredMesh.visible = tiles !== null;
       if (!tiles) return;
-      const g = ground ?? LayeredView.derive(tiles, this.layeredView.pack);
+      const g = ground ?? LayeredView.derive(tiles);
       const lv = this.lv, x0 = origin?.x ?? 0;
       if (lv.x0 !== x0) { lv.x0 = x0; lv.dirty = true; }
       for (let i = 0; i < 121; i++) if (lv.tiles[i] !== tiles[i]) { lv.tiles[i] = tiles[i]; lv.dirty = true; }

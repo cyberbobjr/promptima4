@@ -162,6 +162,23 @@ creature found on disk — the animation frames `anim/<name>/1..N.png` if presen
 puts the lowest opaque row of its frames 2 px above the cell bottom (places: 0). The output directory is rebuilt
 on each run: re-run it after generating or animating more characters.
 
+Objects and opaque tiles (second batch, October 2026):
+- `pixellab-sample.mjs sprite <name> [seed]` covers the `SPRITES` objects too (ships, pirate ships, horse, balloon,
+  village, ruins, bridge, moongate, ankh, campfire, chest, corpse, rocks, column, altar, ladders): 64 candidates
+  of 32 px, contact sheet over the entry's `ground`. The N/S ship views pass the picked W ship as
+  `reference_images` (subject guidance) so the four headings stay the same ship; E is the W view mirrored.
+- `pixellab-sample.mjs tiles <set> [seed]` runs `/create-tiles-pro` on a `TILESETS` list (floors and walls,
+  town paving, lava and fields) → `tiles-<set>-<seed>/`, with a 3×3 sheet to check the seams.
+- Picks: `sprites` (index, or `"<seed>/<index>"`) and `tiles` (`"<set>-<seed>/<index>"`) in `pixellab-picks.json`.
+- The build emits one sprite per id (`OBJECTS`: mirrors E headings; moongate phases 0x40–0x43 squash the full
+  gate to 1/4…4/4 of its height on the ground line, fading in; the bridge is stretched to the full width, its
+  ends 0x19/0x1a are its north/south halves with the deck repeated), sets their `underlay`, writes the `tiles`
+  section (`TILES`; the secret door is the wall with a hairline crack; lava and fields `scroll`), maps the
+  diagonal shores 0x31–0x34 to shallows in `groundOnly`, and draws the check sheet
+  `test-output/pixellab/sample/missing-sheet.png` (sprites over their underlay, tiles 1×1 and 3×3, a corner of
+  Britain).
+- Cost: ~10 generations per 64-candidate sprite or 16-tile call (the referenced N/S ship calls cost a bit more).
+
 ## Cost estimate
 
 A: ≈ 256 bitforge calls + retries ≈ 300–400 generations. B: terrain set and transitions with Pro tools

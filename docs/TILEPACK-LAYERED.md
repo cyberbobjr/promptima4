@@ -11,8 +11,9 @@ map square is one tile. A **layered pack** draws the map views as a modern 2D ga
 4. **sprites** (places, creatures, objects) with transparency and animation frames, drawn over the terrain;
    a creature frame may be larger than a cell and overflow into its neighbours (clipped to the viewport).
 
-Any tile id the pack does not cover (town floors, walls, letters, fields, dungeon tiles...) is drawn opaque from
-the pack's **fallback** classic pack, exactly as today.
+Ids that are neither terrain nor sprite (town floors, walls, doors, lava, fields...) are drawn as opaque full
+cells: from the pack's own **tiles** section when it covers them (with frames and scroll), otherwise from the
+pack's **fallback** classic pack (nearest-neighbour scaled, e.g. the shop sign letters 0x60..0x7e).
 
 The first layered pack is `assets/packs/pixellab/` (art generated with PixelLab, not derived from the original
 game: it is versioned in git). It is built by `tools/packs/build-pixellab.mjs`.
@@ -43,7 +44,8 @@ game: it is versioned in git). It is built by `tools/packs/build-pixellab.mjs`.
     { "name": "forest", "members": [6], "image": "terrain/forest.png", "clip": "land" },
     { "name": "mountains", "members": [8], "image": "terrain/mountains.png", "clip": "land" }
   ],
-  // ground under a sprite tile when the caller gives no ground (see setView): SHAPES id -> terrain id
+  // ground under a sprite whose own ground cell is a sprite id and none of whose 4 neighbours has a plain
+  // ground (see "Ground under a sprite" below): SHAPES id -> terrain id or `tiles` id
   "underlay": { "9": 8, "10": 4, "11": 4, "14": 4, "30": 4 },
   // ids drawn as plain ground (no sprite, no fallback): e.g. the two side tiles of Lord British's castle
   "groundOnly": { "13": 4, "15": 4 },
@@ -53,9 +55,19 @@ game: it is versioned in git). It is built by `tools/packs/build-pixellab.mjs`.
     //        cell bottom + dy pixels (pack scale). One frame = static.
     { "name": "town", "ids": [10], "image": "sprites/town.png", "w": 32, "h": 32, "frames": 1, "dy": 0 },
     { "name": "orc", "ids": [192, 193, 194, 195], "image": "sprites/orc.png", "w": 44, "h": 44, "frames": 8, "dy": 4 }
+  ],
+  // optional: opaque full cells drawn instead of the fallback for these ids, both as the cell itself and as
+  // the ground under a sprite. image: frames of tileSize x tileSize in one row (animated at fps, same per-cell
+  // phase as the sprites); scroll (optional): pixels per animation frame, wrapping inside the cell, the same
+  // for every cell (continuous across neighbours, like the base water)
+  "tiles": [
+    { "name": "brick-floor", "ids": [62], "image": "tiles/brick-floor.png", "frames": 1 },
+    { "name": "lava", "ids": [76], "image": "tiles/lava.png", "frames": 1, "scroll": [1, 0] }
   ]
 }
 ```
+
+Without a `tiles` section every such id comes from the fallback.
 
 ## Renderer contract
 
@@ -66,14 +78,21 @@ game: it is versioned in git). It is built by `tools/packs/build-pixellab.mjs`.
 - `ground` (optional, layered packs only): **13x13** SHAPES ids of the map cells under the viewport *plus a ring
   of one cell* (row-major, index `(vy + 1) * 13 + (vx + 1)` for viewport cell vx, vy in -1..11), **without**
   creatures, objects or line of sight — the plain map tiles. Needed by the dual grid (tiles on the outer corners
-  read the ring). When absent, the renderer derives it from `tiles`: terrain ids as they are, sprite ids through
-  `underlay`, everything else as grass (4); the ring repeats the edge cells.
-- Per cell, with a layered pack: if the ground id is not in `terrainIds` (a town floor, a wall...), the layers
-  treat it as grass (4) for the corner tests and the fallback tile is drawn opaque over the cell. If `tiles[i]`
-  is a sprite id, the sprite is drawn over the ground; if it is any other non-terrain id, the fallback tile is
-  drawn opaque; -1 draws black.
-- Animation: frame = floor(time * fps) + a per-cell phase (e.g. the cell's map x) so creatures are not in step;
-  the base and `fill` textures shift by `scroll` pixels per frame (wrapping).
+  read the ring). When absent, the renderer derives it from `tiles` (the tiles themselves, black as grass (4));
+  the ring repeats the edge cells.
+- Ground of a cell: a terrain id or a `tiles` id is itself; a `groundOnly` id is its mapped terrain. **Ground
+  under a sprite**: when the ground cell id is itself a sprite id (a chest or a column that is part of a town
+  map, an ankh on the world, a creature in a derived ground), the ground is the most common plain ground (terrain
+  or `tiles` id; `tiles` ids that block sight - walls, doors, solid - do not count) among its 4 orthogonal
+  neighbours (ties: north, west, east, south), else its `underlay` entry, else grass (4). Any other id is drawn
+  from the fallback.
+- Per cell, with a layered pack: if the ground is not in `terrainIds` (a town floor, a wall...), the layers treat
+  it as grass (4) for the corner tests and the ground cell is drawn opaque over the cell (`tiles` image, else the
+  fallback tile). If `tiles[i]` is a sprite id, the sprite is drawn over the ground; if it is any other
+  non-terrain id, it is drawn opaque (`tiles` image, else fallback); -1 draws black. Fallback tiles are scaled
+  nearest-neighbour (no smoothing).
+- Animation: frame = floor(time * fps) + a per-cell phase (the cell's map x) so creatures and `tiles` frames are
+  not in step; the base, `fill` and `tiles` textures shift by `scroll` pixels per frame (wrapping, no phase).
 - Everything else that uses the classic atlas (`drawViewTile`, missiles, the intro, the dungeon view, inverts)
   keeps using the fallback pack's atlas.
 

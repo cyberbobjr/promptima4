@@ -5,13 +5,17 @@
 //      shared by 4 cells (index NW*8 + NE*4 + SW*2 + SE, 1 = that cell belongs to the layer). `fill` layers
 //      use their tiles as a mask over a scrolled texture; `clip: "land"` layers are multiplied by the
 //      coverage of the "land" layer;
-//   3. the cells the pack does not cover, opaque from the fallback classic atlas; black cells (line of sight);
+//   3. the other cells, opaque: the pack's `tiles` (frames, scroll), else the fallback classic atlas
+//      (nearest-neighbour scaled); black cells (line of sight). A sprite whose ground cell is itself a sprite
+//      id (an object of a town map) stands on the most common non-sprite ground of its 4 neighbours;
 //   4. sprites, top rows first so that lower creatures overlap upper ones (frames may overflow their cell).
 // It is redrawn when the view changes and when the pack's animation frame (`fps`) advances.
 import type { LayeredPack } from "../assets/store";
-import { T } from "../game/tiles";
+import { isOpaque, T } from "../game/tiles";
 
 const N = 11, G = N + 2;
+/** Orthogonal neighbours, in tie-break order. */
+const NEIGHBOURS = [[0, -1], [-1, 0], [1, 0], [0, 1]] as const;
 
 export class LayeredView {
   readonly canvas: HTMLCanvasElement;
@@ -27,8 +31,12 @@ export class LayeredView {
   private readonly sprite = new Map<number, number>();
   /** Layer membership per SHAPES id: bit k = member of layer k. */
   private readonly member = new Uint32Array(256);
-  /** Ground terrain per cell of the 13x13 grid (-1 = not terrain: grass for the layers + fallback tile). */
+  /** SHAPES id -> index in def.tiles (opaque pack cells). */
+  private readonly tile = new Map<number, number>();
+  /** Ground terrain per cell of the 13x13 grid (-1 = not terrain: grass for the layers + opaque cell). */
   private readonly cells = new Int16Array(G * G);
+  /** Resolved ground id per cell of the 13x13 grid: a terrain id, a `tiles` id or a fallback id. */
+  private readonly under = new Int16Array(G * G);
 
   constructor(readonly pack: LayeredPack, private readonly atlas: CanvasImageSource, private readonly atlasTile: number) {
     const def = pack.def;
@@ -48,26 +56,52 @@ export class LayeredView {
     for (const t of def.terrainIds) this.terrain.add(t);
     def.sprites.forEach((s, i) => { for (const id of s.ids) this.sprite.set(id, i); });
     def.layers.forEach((l, k) => { for (const id of l.members) this.member[id & 255] |= 1 << k; });
+    def.tiles?.forEach((t, i) => { for (const id of t.ids) this.tile.set(id, i); });
   }
 
-  /** Terrain under a ground id: terrain ids, `groundOnly`/`underlay` ids mapped, other sprites on grass, else -1. */
-  private groundOf(id: number): number {
-    const def = this.pack.def;
-    if (this.terrain.has(id)) return id;
-    const m = def.groundOnly?.[id] ?? def.underlay?.[id];
-    if (m !== undefined) return m;
-    return this.sprite.has(id) ? T.GRASS : -1;
+  /** Plain ground of an id, without neighbours: terrain and `tiles` ids, `groundOnly` mapped, else -1. */
+  private plain(id: number): number {
+    if (this.terrain.has(id) || this.tile.has(id)) return id;
+    return this.pack.def.groundOnly?.[id] ?? -1;
   }
 
-  /** Ground derived from the tiles when the caller gives none: the ring repeats the edge cells. */
-  static derive(tiles: ArrayLike<number>, pack: LayeredPack): number[] {
-    const def = pack.def, out: number[] = new Array(G * G);
-    const terrain = new Set(def.terrainIds);
+  /**
+   * Ground of cell gi of the 13x13 grid: its plain ground; for a sprite id (an object of the map) the most
+   * common plain ground of its 4 orthogonal neighbours (`tiles` ids that block sight, i.e. walls, doors and
+   * solid tiles, do not count), else `underlay`, else grass; any other id stays
+   * itself (or its `underlay` entry) and is drawn opaque from the fallback.
+   */
+  private groundAt(ground: ArrayLike<number>, gi: number): number {
+    const id = ground[gi], p = this.plain(id);
+    if (p >= 0) return p;
+    const u = this.pack.def.underlay?.[id];
+    if (!this.sprite.has(id)) return u ?? id;
+    const x = gi % G, y = (gi / G) | 0;
+    const seen: number[] = [], count: number[] = [];
+    let best = -1, bestN = 0;
+    for (const [dx, dy] of NEIGHBOURS) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= G || ny >= G) continue;
+      const n = this.plain(ground[ny * G + nx]);
+      if (n < 0 || (!this.terrain.has(n) && isOpaque(n))) continue; // not on a wall, door or solid tile
+      let k = seen.indexOf(n);
+      if (k < 0) { k = seen.length; seen.push(n); count.push(0); }
+      if (++count[k] > bestN) { bestN = count[k]; best = n; }
+    }
+    return best >= 0 ? best : u ?? T.GRASS;
+  }
+
+  /**
+   * Ground derived from the tiles when the caller gives none: the tiles themselves (sprites are resolved
+   * through their neighbours like map objects), the ring repeats the edge cells, black cells are grass.
+   */
+  static derive(tiles: ArrayLike<number>): number[] {
+    const out: number[] = new Array(G * G);
     const c = (v: number) => Math.min(N - 1, Math.max(0, v - 1));
     for (let y = 0; y < G; y++)
       for (let x = 0; x < G; x++) {
         const t = tiles[c(y) * N + c(x)];
-        out[y * G + x] = terrain.has(t) ? t : def.groundOnly?.[t] ?? def.underlay?.[t] ?? T.GRASS;
+        out[y * G + x] = t < 0 ? T.GRASS : t;
       }
     return out;
   }
@@ -78,7 +112,10 @@ export class LayeredView {
    */
   draw(tiles: ArrayLike<number>, ground: ArrayLike<number>, frame: number, x0: number): boolean {
     const { ctx, S, pack } = this, def = pack.def, W = N * S;
-    for (let i = 0; i < G * G; i++) this.cells[i] = this.groundOf(ground[i]);
+    for (let i = 0; i < G * G; i++) {
+      const u = this.under[i] = this.groundAt(ground, i);
+      this.cells[i] = this.terrain.has(u) ? u : -1;
+    }
 
     // 1. base
     this.tiled(ctx, pack.base, def.base.scroll, frame);
@@ -97,22 +134,23 @@ export class LayeredView {
       ctx.drawImage(t.canvas, 0, 0);
     });
 
-    // 3. uncovered cells (fallback atlas, opaque) and black cells
+    // 3. opaque cells (pack tiles, else the fallback atlas, nearest-neighbour scaled) and black cells
     let fallback = false;
     const A = this.atlasTile;
-    ctx.imageSmoothingEnabled = A > S; // a bigger fallback tile is scaled down
     for (let vy = 0; vy < N; vy++)
       for (let vx = 0; vx < N; vx++) {
         const t = tiles[vy * N + vx], x = vx * S, y = vy * S;
         if (t < 0) { ctx.fillStyle = "#000"; ctx.fillRect(x, y, S, S); continue; }
+        const gi = (vy + 1) * G + vx + 1;
         let f = -1;
         if (!this.terrain.has(t) && !this.sprite.has(t) && def.groundOnly?.[t] === undefined) f = t;
-        else if (this.cells[(vy + 1) * G + vx + 1] < 0) f = ground[(vy + 1) * G + vx + 1];
+        else if (this.cells[gi] < 0) f = this.under[gi];
         if (f < 0) continue;
+        const k = this.tile.get(f);
+        if (k !== undefined) { this.cell(k, x, y, frame, frame + x0 + vx); continue; }
         ctx.drawImage(this.atlas, (f & 15) * A, ((f >> 4) & 15) * A, A, A, x, y, S, S);
         fallback = true;
       }
-    ctx.imageSmoothingEnabled = false;
 
     // 4. sprites, row by row (lower ones over upper ones)
     for (let vy = 0; vy < N; vy++)
@@ -125,6 +163,20 @@ export class LayeredView {
           vx * S + ((S - s.w) >> 1), (vy + 1) * S + (s.dy ?? 0) - s.h, s.w, s.h);
       }
     return fallback;
+  }
+
+  /**
+   * Opaque pack tile k at (x, y): frame `phase` mod frames; the texture shifted by `scroll` pixels per
+   * animation frame (`frame`, the same for every cell so that neighbours stay continuous), wrapping.
+   */
+  private cell(k: number, x: number, y: number, frame: number, phase: number) {
+    const { ctx, S } = this, t = this.pack.def.tiles![k], img = this.pack.tiles[k];
+    const sx = (t.frames > 1 ? ((phase % t.frames) + t.frames) % t.frames : 0) * S;
+    const ox = (((t.scroll?.[0] ?? 0) * frame) % S + S) % S, oy = (((t.scroll?.[1] ?? 0) * frame) % S + S) % S;
+    // destination [0, o) shows source [S - o, S), destination [o, S) shows source [0, S - o)
+    for (const [dx, srcX, w] of [[0, S - ox, ox], [ox, 0, S - ox]])
+      for (const [dy, srcY, h] of [[0, S - oy, oy], [oy, 0, S - oy]])
+        if (w > 0 && h > 0) ctx.drawImage(img, sx + srcX, srcY, w, h, x + dx, y + dy, w, h);
   }
 
   /** Dual grid of layer k: tile (i, j), i, j in 0..11, reads cells (i-1, j-1) NW .. (i, j) SE. */

@@ -64,12 +64,45 @@
   "9": 8,
   "10": 4,
   "11": 4,
+  "12": 4,
   "14": 4,
-  "30": 4
+  "16": 1,
+  "17": 1,
+  "18": 1,
+  "19": 1,
+  "20": 4,
+  "21": 4,
+  "23": 2,
+  "24": 4,
+  "25": 2,
+  "26": 2,
+  "27": 62,
+  "28": 62,
+  "29": 4,
+  "30": 4,
+  "48": 62,
+  "55": 4,
+  "56": 62,
+  "60": 62,
+  "61": 62,
+  "64": 4,
+  "65": 4,
+  "66": 4,
+  "67": 4,
+  "74": 62,
+  "75": 4,
+  "128": 1,
+  "129": 1,
+  "130": 1,
+  "131": 1
  },
  "groundOnly": {
   "13": 4,
-  "15": 4
+  "15": 4,
+  "49": 2,
+  "50": 2,
+  "51": 2,
+  "52": 2
  },
  "sprites": [
   {
@@ -472,10 +505,10 @@
    "name": "headless",
    "ids": [212, 213, 214, 215],
    "image": "sprites/headless.png",
-   "w": 40,
-   "h": 40,
+   "w": 32,
+   "h": 32,
    "frames": 8,
-   "dy": 5
+   "dy": -1
   },
   {
    "name": "cyclops",
@@ -566,6 +599,358 @@
    "h": 44,
    "frames": 8,
    "dy": 7
+  },
+  {
+   "name": "ship-w",
+   "ids": [16],
+   "image": "sprites/ship-w.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ship-n",
+   "ids": [17],
+   "image": "sprites/ship-n.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ship-e",
+   "ids": [18],
+   "image": "sprites/ship-e.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ship-s",
+   "ids": [19],
+   "image": "sprites/ship-s.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "pirate-w",
+   "ids": [128],
+   "image": "sprites/pirate-w.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "pirate-n",
+   "ids": [129],
+   "image": "sprites/pirate-n.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "pirate-e",
+   "ids": [130],
+   "image": "sprites/pirate-e.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "pirate-s",
+   "ids": [131],
+   "image": "sprites/pirate-s.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "horse-w",
+   "ids": [20],
+   "image": "sprites/horse-w.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "horse-e",
+   "ids": [21],
+   "image": "sprites/horse-e.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "balloon",
+   "ids": [24],
+   "image": "sprites/balloon.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "village",
+   "ids": [12],
+   "image": "sprites/village.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ruins",
+   "ids": [29],
+   "image": "sprites/ruins.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "bridge",
+   "ids": [23],
+   "image": "sprites/bridge.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "bridge-n",
+   "ids": [25],
+   "image": "sprites/bridge-n.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "bridge-s",
+   "ids": [26],
+   "image": "sprites/bridge-s.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "moongate-0",
+   "ids": [64],
+   "image": "sprites/moongate-0.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "moongate-1",
+   "ids": [65],
+   "image": "sprites/moongate-1.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "moongate-2",
+   "ids": [66],
+   "image": "sprites/moongate-2.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "moongate-3",
+   "ids": [67],
+   "image": "sprites/moongate-3.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ankh",
+   "ids": [61],
+   "image": "sprites/ankh.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "campfire",
+   "ids": [75],
+   "image": "sprites/campfire.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "chest",
+   "ids": [60],
+   "image": "sprites/chest.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "corpse",
+   "ids": [56],
+   "image": "sprites/corpse.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "rocks",
+   "ids": [55],
+   "image": "sprites/rocks.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "column",
+   "ids": [48],
+   "image": "sprites/column.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "altar",
+   "ids": [74],
+   "image": "sprites/altar.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ladder-up",
+   "ids": [27],
+   "image": "sprites/ladder-up.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "ladder-down",
+   "ids": [28],
+   "image": "sprites/ladder-down.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  }
+ ],
+ "tiles": [
+  {
+   "name": "brick-floor",
+   "ids": [62],
+   "image": "tiles/brick-floor.png",
+   "frames": 1
+  },
+  {
+   "name": "wood-floor",
+   "ids": [63],
+   "image": "tiles/wood-floor.png",
+   "frames": 1
+  },
+  {
+   "name": "dungeon-floor",
+   "ids": [22],
+   "image": "tiles/dungeon-floor.png",
+   "frames": 1
+  },
+  {
+   "name": "wall",
+   "ids": [127],
+   "image": "tiles/wall.png",
+   "frames": 1
+  },
+  {
+   "name": "secret-door",
+   "ids": [73],
+   "image": "tiles/secret-door.png",
+   "frames": 1
+  },
+  {
+   "name": "solid",
+   "ids": [72],
+   "image": "tiles/solid.png",
+   "frames": 1
+  },
+  {
+   "name": "rubble",
+   "ids": [57],
+   "image": "tiles/rubble.png",
+   "frames": 1
+  },
+  {
+   "name": "door",
+   "ids": [58],
+   "image": "tiles/door.png",
+   "frames": 1
+  },
+  {
+   "name": "locked-door",
+   "ids": [59],
+   "image": "tiles/locked-door.png",
+   "frames": 1
+  },
+  {
+   "name": "lava",
+   "ids": [76],
+   "image": "tiles/lava.png",
+   "frames": 1,
+   "scroll": [1, 0]
+  },
+  {
+   "name": "poison-field",
+   "ids": [68],
+   "image": "tiles/poison-field.png",
+   "frames": 1,
+   "scroll": [1, 1]
+  },
+  {
+   "name": "energy-field",
+   "ids": [69],
+   "image": "tiles/energy-field.png",
+   "frames": 1,
+   "scroll": [1, 0]
+  },
+  {
+   "name": "fire-field",
+   "ids": [70],
+   "image": "tiles/fire-field.png",
+   "frames": 1,
+   "scroll": [0, 1]
+  },
+  {
+   "name": "sleep-field",
+   "ids": [71],
+   "image": "tiles/sleep-field.png",
+   "frames": 1,
+   "scroll": [1, 1]
   }
  ]
 }

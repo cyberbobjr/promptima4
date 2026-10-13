@@ -110,6 +110,124 @@ for (const [name, ids] of Object.entries(IDS)) {
   sprites.push({ name, ids, image: `sprites/${name}.png`, w, h, frames: frames.length, dy });
 }
 
+// --- objects (transports, places, things on floors): one sprite per SHAPES id, from a picked candidate
+/** A candidate picked in picks.sprites: an index in sprite-<name>/, or "<seed>/<index>" for sprite-<name>-<seed>/. */
+const picked = (name) => {
+  const p = String(picks.sprites[name]), [dir, i] = p.includes("/") ? p.split("/") : ["", p];
+  return read(path.join(SRC, `sprite-${name}${dir ? `-${dir}` : ""}`, `${i}.png`));
+};
+const blank = (w = SIZE, h = SIZE) => new PNG({ width: w, height: h });
+const mirror = (img) => {
+  const out = blank(img.width, img.height);
+  for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++)
+    img.data.copy(out.data, (y * img.width + x) * 4, (y * img.width + img.width - 1 - x) * 4, (y * img.width + img.width - x) * 4);
+  return out;
+};
+/** Rows of an image, `map(y)` giving the source row of each output row (-1: transparent). */
+const rows = (img, map) => {
+  const out = blank(img.width, img.height);
+  for (let y = 0; y < img.height; y++) { const s = map(y); if (s >= 0) img.data.copy(out.data, y * img.width * 4, s * img.width * 4, (s + 1) * img.width * 4); }
+  return out;
+};
+/** Opaque rows (alpha >= 128 somewhere) of an image: [first, last]. */
+const extent = (img) => {
+  let a = -1, b = -1;
+  for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) if (img.data[(y * img.width + x) * 4 + 3] >= 128) { if (a < 0) a = y; b = y; break; }
+  return [a, b];
+};
+/**
+ * Moongate opening phases (0x40 closed .. 0x43 open), as in the original: the gate grows out of the ground,
+ * squashed vertically to 1/4, 1/2, 3/4 and full height on the same ground line, and fading in.
+ */
+const moongatePhase = (img, k) => {
+  const [top, bottom] = extent(img), h = bottom - top + 1, shown = Math.max(2, Math.round(h * (k + 1) / 4));
+  const out = rows(img, (y) => (y > bottom || y <= bottom - shown ? -1 : bottom - Math.floor((bottom - y) * h / shown)));
+  for (let p = 3; p < out.data.length; p += 4) out.data[p] = Math.round(out.data[p] * (0.55 + 0.15 * k));
+  return out;
+};
+/** Columns stretched (nearest) so the opaque part spans the whole width: a bridge meets both banks. */
+const fullWidth = (img) => {
+  let a = img.width, b = -1;
+  for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) if (img.data[(y * img.width + x) * 4 + 3] >= 128) { a = Math.min(a, x); b = Math.max(b, x); }
+  const out = blank(img.width, img.height);
+  for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+    const sx = a + Math.floor(x * (b - a + 1) / img.width);
+    img.data.copy(out.data, (y * img.width + x) * 4, (y * img.width + sx) * 4, (y * img.width + sx + 1) * 4);
+  }
+  return out;
+};
+/** Bridge ends 0x19 (railing on the north side) / 0x1a (south side): one half of the bridge, the deck repeated. */
+const bridgeEnd = (img, north) => {
+  const [top, bottom] = extent(img), mid = (top + bottom) >> 1;
+  return rows(img, north ? (y) => (y < top ? -1 : y <= mid ? y : mid - ((y - mid) % 4)) : (y) => (y > bottom ? -1 : y >= mid ? y : mid + ((mid - y) % 4)));
+};
+/** [sprite name, SHAPES ids, picked candidate, derivation, underlay id] */
+const OBJECTS = [
+  ["ship-w", [0x10], "ship", null, 1],
+  ["ship-n", [0x11], "ship-n", null, 1],
+  ["ship-e", [0x12], "ship", mirror, 1],
+  ["ship-s", [0x13], "ship-s", null, 1],
+  ["pirate-w", [0x80], "pirate", null, 1],
+  ["pirate-n", [0x81], "pirate-n", null, 1],
+  ["pirate-e", [0x82], "pirate", mirror, 1],
+  ["pirate-s", [0x83], "pirate-s", null, 1],
+  ["horse-w", [0x14], "horse", null, 4],
+  ["horse-e", [0x15], "horse", mirror, 4],
+  ["balloon", [0x18], "balloon", null, 4],
+  ["village", [0x0c], "village", null, 4],
+  ["ruins", [0x1d], "ruins", null, 4],
+  ["bridge", [0x17], "bridge", fullWidth, 2],
+  ["bridge-n", [0x19], "bridge", (i) => bridgeEnd(fullWidth(i), true), 2],
+  ["bridge-s", [0x1a], "bridge", (i) => bridgeEnd(fullWidth(i), false), 2],
+  ...[0, 1, 2, 3].map((k) => [`moongate-${k}`, [0x40 + k], "moongate", (i) => moongatePhase(i, k), 4]),
+  ["ankh", [0x3d], "ankh", null, 62],
+  ["campfire", [0x4b], "campfire", null, 4],
+  ["chest", [0x3c], "chest", null, 62],
+  ["corpse", [0x38], "corpse", null, 62],
+  ["rocks", [0x37], "rocks", null, 4],
+  ["column", [0x30], "column", null, 62],
+  ["altar", [0x4a], "altar", null, 62],
+  ["ladder-up", [0x1b], "ladder-up", null, 62],
+  ["ladder-down", [0x1c], "ladder-down", null, 62],
+];
+const underlay = { 9: 8, 10: 4, 11: 4, 14: 4, 30: 4 };
+const objects = [];
+for (const [name, ids, pick, derive, under] of OBJECTS) {
+  if (picks.sprites[pick] === undefined) { missing.push(name); continue; }
+  const img = derive ? derive(picked(pick)) : picked(pick);
+  write(path.join(OUT, "sprites", `${name}.png`), img);
+  const s = { name, ids, image: `sprites/${name}.png`, w: img.width, h: img.height, frames: 1, dy: 0 };
+  sprites.push(s); objects.push({ ...s, img, under });
+  for (const id of ids) underlay[id] = under;
+}
+
+// --- opaque tiles (picks.tiles: name -> "<set>-<seed>/<index>" in tiles-*/), [name, ids, scroll]
+const TILES = [
+  ["brick-floor", [0x3e]], ["wood-floor", [0x3f]], ["dungeon-floor", [0x16]], ["wall", [0x7f]], ["secret-door", [0x49]],
+  ["solid", [0x48]], ["rubble", [0x39]], ["door", [0x3a]], ["locked-door", [0x3b]],
+  ["lava", [0x4c], [1, 0]], ["poison-field", [0x44], [1, 1]], ["energy-field", [0x45], [1, 0]],
+  ["fire-field", [0x46], [0, 1]], ["sleep-field", [0x47], [1, 1]],
+];
+/** The secret door is the wall with a hairline crack (the original marks it with one dot). */
+const secretDoor = (wall) => {
+  const out = blank(); wall.data.copy(out.data);
+  const crack = [[16, 9], [16, 10], [15, 11], [15, 12], [16, 13], [16, 14], [17, 15], [17, 16], [16, 17], [16, 18], [16, 19], [15, 20], [15, 21]];
+  for (const [x, y] of crack) { const d = (y * SIZE + x) * 4; for (let c = 0; c < 3; c++) out.data[d + c] = Math.round(out.data[d + c] * 0.45); }
+  return out;
+};
+const tileImg = (name) => read(path.join(SRC, `tiles-${picks.tiles[name]}.png`));
+const tiles = [], tileImgs = {};
+for (const [name, ids, scroll] of TILES) {
+  const key = name === "secret-door" ? "wall" : name;
+  if (!picks.tiles?.[key]) { missing.push(name); continue; }
+  const img = name === "secret-door" ? secretDoor(tileImg("wall")) : tileImg(key);
+  if (img.width !== SIZE || img.height !== SIZE) throw new Error(`${name}: tile is ${img.width}x${img.height}`);
+  for (let p = 3; p < img.data.length; p += 4) img.data[p] = 255;
+  write(path.join(OUT, "tiles", `${name}.png`), img);
+  tileImgs[name] = img;
+  tiles.push({ name, ids, image: `tiles/${name}.png`, frames: 1, ...(scroll ? { scroll } : {}) });
+}
+
 const pack = {
   name: "PixelLab",
   format: 2,
@@ -119,12 +237,70 @@ const pack = {
   base: { image: "terrain/base.png", scroll: [1, 0] },
   terrainIds: range(0, 9),
   layers,
-  underlay: { 9: 8, 10: 4, 11: 4, 14: 4, 30: 4 },
-  groundOnly: { 13: 4, 15: 4 },
+  underlay,
+  // diagonal shores (towns, ship prows in combat): plain shallows
+  groundOnly: { 13: 4, 15: 4, 49: 2, 50: 2, 51: 2, 52: 2 },
   sprites,
+  tiles,
 };
 // number arrays on one line
 const json = JSON.stringify(pack, null, 1).replace(/\[\s+([-\d,\s]+?)\s+\]/g, (m, a) => `[${a.split(/,\s*/).join(", ")}]`);
 fs.writeFileSync(path.join(OUT, "pack.json"), json + "\n");
 console.log(`pack: ${layers.length} layers, ${sprites.length} sprites (${sprites.map((s) => `${s.name}${s.frames > 1 ? `x${s.frames}` : ""} dy ${s.dy}`).join(", ")})`);
+console.log(`tiles: ${tiles.map((t) => t.name).join(", ")}`);
 console.log(`missing: ${missing.join(", ") || "none"}`);
+checkSheet();
+
+/**
+ * test-output/pixellab/sample/missing-sheet.png: every object sprite over its underlay, every tile alone and
+ * 3x3 (seams), at 3x zoom; then a part of Britain drawn with the tiles and sprites (ground under sprites:
+ * grass for the world-map ids, the floor otherwise).
+ */
+function checkSheet() {
+  const Z = 3, C = SIZE * Z + 6;
+  const ground = (id) => {
+    if (tileImgs[{ 62: "brick-floor", 22: "dungeon-floor" }[id]]) return tileImgs[{ 62: "brick-floor", 22: "dungeon-floor" }[id]];
+    const f = { 1: "tileset-deep/1111.png", 2: "tileset-shallows/1111.png", 4: "tileset-coast/1111.png" }[id] ?? "tileset-coast/1111.png";
+    return read(path.join(SRC, f));
+  };
+  const cols = 10, objRows = Math.ceil(objects.length / cols), tileRows = Math.ceil(tiles.length / 4);
+  const town = JSON.parse(fs.readFileSync("assets/original/maps/towns/britain.json", "utf8")).tiles, TW = 16, TH = 13, TX = 0, TY = 16;
+  const width = Math.max(cols * C, 4 * (C + 3 * SIZE * Z + 6), TW * SIZE * 2) + 8;
+  const height = objRows * C + tileRows * (3 * SIZE * Z + 6) + TH * SIZE * 2 + 24;
+  const sheet = new PNG({ width, height });
+  for (let p = 0; p < width * height; p++) sheet.data.set([40, 40, 48, 255], p * 4);
+  const put = (img, x0, y0, z, sx = 0, sy = 0, w = img.width, h = img.height) => {
+    for (let y = 0; y < h * z; y++) for (let x = 0; x < w * z; x++) {
+      const s = (((sy + (y / z | 0)) % img.height) * img.width + (sx + (x / z | 0)) % img.width) * 4, d = ((y0 + y) * width + x0 + x) * 4, a = img.data[s + 3] / 255;
+      if (x0 + x >= width || y0 + y >= height) continue;
+      for (let c = 0; c < 3; c++) sheet.data[d + c] = img.data[s + c] * a + sheet.data[d + c] * (1 - a);
+    }
+  };
+  objects.forEach((o, i) => {
+    const x0 = 4 + (i % cols) * C, y0 = 4 + Math.floor(i / cols) * C;
+    put(ground(o.under), x0, y0, Z, 0, 0, SIZE, SIZE);
+    put(o.img, x0, y0, Z);
+  });
+  let y1 = 4 + objRows * C + 6;
+  tiles.forEach((t, i) => {
+    const x0 = 4 + (i % 4) * (C + 3 * SIZE * Z + 6), y0 = y1 + Math.floor(i / 4) * (3 * SIZE * Z + 6);
+    const img = tileImgs[t.name];
+    put(img, x0, y0, Z);
+    put(img, x0 + C, y0, Z, 0, 0, 3 * SIZE, 3 * SIZE);
+  });
+  // Britain, 2x: tile ids -> tiles, terrain picks, or sprites over their underlay
+  y1 += tileRows * (3 * SIZE * Z + 6) + 6;
+  const terrain = Object.fromEntries(Object.entries(picks.terrain).map(([t, i]) => [t, read(path.join(SRC, "terrain-1", `${i}.png`))]));
+  // the water and grass the layers actually fill with
+  Object.assign(terrain, { 1: ground(1), 2: ground(2), 4: ground(4) });
+  const byId = {};
+  for (const t of tiles) for (const id of t.ids) byId[id] = { tile: tileImgs[t.name] };
+  for (const o of objects) for (const id of o.ids) byId[id] = { sprite: o.img, under: o.under };
+  for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) {
+    const id = town[(TY + y) * 32 + TX + x], e = byId[id], x0 = 4 + x * SIZE * 2, y0 = y1 + y * SIZE * 2;
+    const g = e?.tile ?? (e?.sprite ? (e.under === 62 || e.under === 22 ? ground(e.under) : terrain[e.under]) : terrain[id]);
+    if (g) put(g, x0, y0, 2, 0, 0, SIZE, SIZE);
+    if (e?.sprite) put(e.sprite, x0, y0, 2);
+  }
+  write(path.join(SRC, "missing-sheet.png"), sheet);
+}
