@@ -472,8 +472,8 @@
    "name": "headless",
    "ids": [212, 213, 214, 215],
    "image": "sprites/headless.png",
-   "w": 44,
-   "h": 44,
+   "w": 40,
+   "h": 40,
    "frames": 8,
    "dy": 5
   },
@@ -490,10 +490,10 @@
    "name": "wisp",
    "ids": [220, 221, 222, 223],
    "image": "sprites/wisp.png",
-   "w": 44,
-   "h": 44,
+   "w": 40,
+   "h": 40,
    "frames": 8,
-   "dy": 6
+   "dy": 5
   },
   {
    "name": "evilmage",
