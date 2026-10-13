@@ -63,7 +63,7 @@ class Codex {
     const g = this.g, s = g.save;
     s.members = 1;
     this.restoreView = blankView(g);
-    this.restoreDraw = addDrawHook(g, (r) => this.layer.draw(r));
+    this.restoreDraw = addDrawHook(g, (r) => this.layer.draw(r), { wide: true });
     this.say(M.suddenDarkness);
     await ticks(4);
     await this.picture("KEY7.EGA");

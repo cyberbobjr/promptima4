@@ -58,7 +58,7 @@ async function meditate(g: Game, virtue: number) {
       const layer = new PixelLayer();
       layer.or(await loadPicture(SHRINES[virtue].visionPic.toUpperCase() + ".EGA"));
       const restoreBlank = blankView(g);
-      const restoreDraw = addDrawHook(g, (r) => layer.draw(r));
+      const restoreDraw = addDrawHook(g, (r) => layer.draw(r), { wide: true });
       try {
         flushKeys(g);
         await g.getKey();

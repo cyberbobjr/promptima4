@@ -1,5 +1,6 @@
 // Shared helpers for spells, items, shrines and the endgame: original prompt routines, game mode,
 // timed waits and extra drawing layers (pictures OR-ed over the screen, small tiles in the viewport).
+import type { Layer } from "../../ui/layers";
 import { assets } from "../../assets/store";
 import { EGA_PALETTE } from "../../formats/ega";
 import type { PlayerRecord } from "../../formats/save";
@@ -21,9 +22,12 @@ export function gameMode(g: Game): number {
 
 // ------------------------------------------------------------------ drawing layers
 
-/** Adds a drawing pass over the game screen (a layer). Returns the function removing it. */
-export function addDrawHook(g: Game, fn: (r: Renderer) => void): () => void {
-  const layer = g.layers.push({ name: "draw", draw: fn });
+/**
+ * Adds a drawing pass over the game screen (a layer). Returns the function removing it. `parts`: more layer
+ * parts (wide pictures, the list shown by the modern layout).
+ */
+export function addDrawHook(g: Game, fn: (r: Renderer) => void, parts: Omit<Layer, "draw"> = {}): () => void {
+  const layer = g.layers.push({ name: "draw", ...parts, draw: fn });
   return () => layer.remove();
 }
 

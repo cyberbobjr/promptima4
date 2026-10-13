@@ -12,8 +12,11 @@ export interface Config {
   /** Tile pack folder name under assets (tiles/<pack>/pack.json). */
   tiles: { pack: string };
   /** font: "auto" = original 8x8 font for English with the original tiles, the modern font otherwise. */
-  /** title: "modern" = the port's title screen (src/ui/dom/title.ts), "classic" = TITLE.EXE's. */
-  display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean; title: "modern" | "classic" };
+  /**
+   * title: "modern" = the port's title screen (src/ui/dom/title.ts), "classic" = TITLE.EXE's. layout: "modern"
+   * = the responsive screen (map canvas and HTML panels, src/ui/dom/hud.ts), "classic" = the 1987 screen.
+   */
+  display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean; title: "modern" | "classic"; layout: "modern" | "classic" };
   /** barCollapsed: the command bar folded away by its handle (remembered). */
   controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number; barCollapsed: boolean };
   /**

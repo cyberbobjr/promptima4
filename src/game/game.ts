@@ -383,6 +383,8 @@ export class Game {
     const { base, layers } = this.layers.visible();
     const drawLayers = () => { for (const l of layers) l.draw?.(r); };
     r.setInverts(this.layers.inverts()); // src/ui/invert.ts
+    // compact layout: the canvas shows the map only, unless a screen uses the whole picture (intro, visions)
+    r.setCrop(!base || !this.save || !this.map || layers.some((l) => l.wide));
     if (!base || !this.save || !this.map) {
       r.setView(null);
       r.view3d = null;

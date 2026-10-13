@@ -17,7 +17,7 @@ const LLM_PROVIDERS = ["anthropic", "openai", "ollama"];
 type Opt = { value: string; label: string };
 
 /** Values read at start-up: when they differ from the config, a reload is needed. */
-const startup = (c: Config) => JSON.stringify([c.lang.game, c.lang.ui, c.tiles.pack, c.display.font]);
+const startup = (c: Config) => JSON.stringify([c.lang.game, c.lang.ui, c.tiles.pack, c.display.font, c.display.layout, c.display.title]);
 
 export function createSettingsPanel(g: Game): Panel {
   void g;
@@ -70,7 +70,11 @@ export function createSettingsPanel(g: Game): Panel {
           row("set-pack-other", t("settings.packOther"), text("set-pack-other", KNOWN_PACKS.includes(c.tiles.pack) ? "" : c.tiles.pack,
             (v) => { if (v) void save({ tiles: { pack: v } }); }, { placeholder: t("settings.packOtherHint") })),
           row("set-font", t("settings.font"), select("set-font", c.display.font, modes("settings.font", ["auto", "original", "modern"]),
-            (v) => save({ display: { font: v as Config["display"]["font"] } })), t("settings.fontHint"))),
+            (v) => save({ display: { font: v as Config["display"]["font"] } })), t("settings.fontHint")),
+          row("set-layout", t("settings.layout"), select("set-layout", c.display.layout ?? "modern", modes("settings.layout", ["modern", "classic"]),
+            (v) => save({ display: { layout: v as Config["display"]["layout"] } }))),
+          row("set-title", t("settings.title"), select("set-title", c.display.title ?? "modern", modes("settings.title", ["modern", "classic"]),
+            (v) => save({ display: { title: v as Config["display"]["title"] } })))),
         section(t("settings.controls"),
           row("set-bar", t("settings.commandBar"), select("set-bar", c.controls.commandBar, modes("settings.bar", ["auto", "always", "never"]), async (v) => {
             await save({ controls: { commandBar: v as Config["controls"]["commandBar"] } });

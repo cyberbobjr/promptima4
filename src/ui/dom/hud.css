@@ -1,0 +1,75 @@
+/* Responsive game screen (hud.ts). #stage is the size container; the map is a square of side --map:
+   landscape: the map on the left, the panels in a column on its right;
+   portrait: one column as wide as the map, the panels below it;
+   phone: the same, the party as compact pills. */
+#stage.layout-modern { container: stage / size; }
+.hud-grid {
+  --gap: 12px;
+  --side-min: 280px;
+  --map: min(calc(100cqh - 2 * var(--gap)), calc(100cqw - 3 * var(--gap) - var(--side-min)));
+  display: grid; grid-template-columns: var(--map) minmax(var(--side-min), 440px); grid-template-rows: var(--map);
+  gap: var(--gap); align-content: center; justify-content: center; width: 100%; height: 100%; padding: var(--gap); box-sizing: border-box;
+}
+.hud-map { width: var(--map); height: var(--map); display: grid; place-items: center; min-width: 0; min-height: 0; }
+.hud-side { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; min-width: 0; min-height: 0; }
+.hud-side[hidden] { display: none; }
+/* title and character creation: the whole canvas, nothing beside it */
+.hud-grid.solo { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+.hud-grid.solo .hud-map { width: 100%; height: 100%; }
+
+.hud-panel { background: var(--ui-bg); border: 3px solid #a6a8ff; border-radius: 8px; padding: 10px 12px; min-width: 0; box-sizing: border-box; }
+.hud-party { display: grid; gap: 9px; align-content: start; }
+.hud-party h2 { margin: 0; font-size: 11px; color: var(--ui-accent); font-weight: normal; }
+.hud-list { margin: 0; font: inherit; font-size: 11px; line-height: 1.6; white-space: pre; overflow-x: auto; }
+.hud-member { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 3px 8px; font-size: 11px; border-radius: 5px; padding: 3px 4px; margin: -3px -4px; }
+.hud-n { color: var(--ui-dim); }
+.hud-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-hp { font-variant-numeric: tabular-nums; }
+.hud-class { grid-column: 2 / -1; font-size: 8px; color: var(--ui-dim); }
+.hud-bar { grid-column: 1 / -1; height: 5px; background: #22223a; border-radius: 3px; overflow: hidden; }
+.hud-bar i { display: block; height: 100%; background: #55ff7a; transition: width .25s; }
+.hud-member.poison .hud-bar i, .hud-member.poison .hud-hp { background: #7dff55; color: #7dff55; }
+.hud-member.poison .hud-hp { background: none; }
+.hud-member.low .hud-bar i { background: #ff5a6a; }
+.hud-member.sleep { opacity: .7; }
+.hud-member.dead { opacity: .45; }
+.hud-member.turn { background: #1d2060; outline: 2px solid var(--ui-accent); }
+.hud-member.flash { filter: invert(1); }
+
+.hud-res { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 10px; }
+.hud-res b { color: #ffd34d; font-weight: normal; font-variant-numeric: tabular-nums; }
+.hud-effect { color: var(--ui-accent); }
+.hud-moons { display: inline-flex; gap: 6px; font-size: 14px; }
+.hud-moon { width: 1em; height: 1em; border-radius: 50%; box-shadow: inset var(--shade) 0 0 0 var(--ui-bg); }
+.hud-moon.trammel { background: radial-gradient(circle at 35% 35%, #fff, #c7d2ff 60%, #7f8fd8); }
+.hud-moon.felucca { background: radial-gradient(circle at 40% 40%, #fff, #ffe2b0 60%, #d9a45e); }
+.hud-moon.new { opacity: .22; }
+.hud-st { margin-left: 4px; font-weight: normal; color: #ffd34d; }
+
+.hud-console { display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; font-size: 12px; line-height: 1.55; }
+.hud-line { white-space: pre; min-height: 1.55em; }
+.hud-cursor { display: inline-block; width: .85em; height: 1em; background: var(--ui-accent); vertical-align: -2px; animation: hud-blink 1s steps(1) infinite; }
+@keyframes hud-blink { 50% { opacity: 0; } }
+
+@container stage (max-aspect-ratio: 1/1) {
+  .hud-grid {
+    --map: min(calc(100cqw - 2 * var(--gap)), calc(100cqh - 3 * var(--gap) - 240px));
+    grid-template-columns: var(--map); grid-template-rows: var(--map) minmax(0, 1fr); align-content: start;
+  }
+  .hud-party { grid-template-columns: 1fr 1fr; column-gap: 22px; }
+  .hud-party h2, .hud-list { grid-column: 1 / -1; }
+}
+@container stage (max-aspect-ratio: 1/1) and (max-width: 560px) {
+  .hud-grid { --gap: 8px; --map: min(calc(100cqw - 2 * var(--gap)), calc(100cqh - 3 * var(--gap) - 190px)); }
+  .hud-side { gap: 6px; }
+  .hud-panel { padding: 6px 8px; border-width: 2px; }
+  .hud-party { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .hud-member { grid-template-columns: 1fr; font-size: 8px; gap: 3px; margin: 0; }
+  .hud-n, .hud-class { display: none; }
+  .hud-res { font-size: 8px; gap: 4px 10px; }
+  .hud-moons { font-size: 12px; }
+  .hud-console { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) { .hud-cursor { animation: none; } .hud-bar i { transition: none; } }
+/* the map in the same lavender frame as the panels (outside its box, so the cell keeps its size) */
+.hud-grid:not(.solo) .hud-map canvas { box-shadow: 0 0 0 3px #a6a8ff; border-radius: 2px; }

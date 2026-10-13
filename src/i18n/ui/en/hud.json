@@ -1,0 +1,16 @@
+{
+  "hud.party": "Party",
+  "hud.console": "Messages",
+  "hud.food": "Food",
+  "hud.gold": "Gold",
+  "hud.effect": "Active spell",
+  "hud.moons": "Trammel and Felucca",
+  "hud.wind.0": "Wind: west",
+  "hud.wind.1": "Wind: north",
+  "hud.wind.2": "Wind: east",
+  "hud.wind.3": "Wind: south",
+  "hud.status.P": "Poisoned",
+  "hud.status.S": "Asleep",
+  "hud.status.D": "Dead",
+  "hud.status.G": "Good"
+}

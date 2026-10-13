@@ -16,6 +16,9 @@ export const VIEW_X = 8, VIEW_Y = 8, VIEW_TILES = 11, TILE = 16;
 /** A rectangle of the original 320x200 screen. */
 export interface ScreenRect { x: number; y: number; w: number; h: number }
 
+const FULL_SCREEN: ScreenRect = { x: 0, y: 0, w: SCREEN_W, h: SCREEN_H };
+const MAP_VIEW: ScreenRect = { x: VIEW_X, y: VIEW_Y, w: VIEW_TILES * TILE, h: VIEW_TILES * TILE };
+
 /**
  * Text rendering: the original 8x8 CHARSET glyphs, or a modern pixel font (Press Start 2P, OFL,
  * public/fonts) drawn on a higher-resolution UI layer, needed for accented languages. Control glyphs
@@ -59,6 +62,14 @@ export class Renderer {
   /** Fallback atlas as a canvas fed from atlasData (animateTiles re-puts the scroll tiles). */
   private atlasCanvas: CanvasRenderingContext2D | null = null;
   private atlasImage: ImageData | null = null;
+  /**
+   * Modern layout (src/ui/dom/hud.ts): the canvas shows only the map viewport, with square pixels; the party,
+   * the console... are HTML. Screens using the whole 320x200 screen still show it whole (setCrop).
+   */
+  compact = false;
+  private cropRect: ScreenRect = FULL_SCREEN;
+  /** Part of the 320x200 screen the canvas shows. */
+  get crop(): ScreenRect { return this.cropRect; }
   /** Last view given to setView (layered), its ground and origin, and the drawn animation frame. */
   private readonly lv = { tiles: new Int16Array(121), ground: new Int16Array(169), x0: 0, frame: -1, dirty: true, fallback: false };
 
@@ -314,15 +325,27 @@ export class Renderer {
     this.ui.fillRect(x, y, w, h);
   }
 
+  /** Compact layout: the map viewport only, or the whole screen when `wide` (pictures, intro). */
+  setCrop(wide: boolean) {
+    const rect = this.compact && !wide ? MAP_VIEW : FULL_SCREEN;
+    if (rect === this.cropRect) return;
+    this.cropRect = rect;
+    Object.assign(this.camera, { left: rect.x, right: rect.x + rect.w, top: rect.y, bottom: rect.y + rect.h });
+    this.camera.updateProjectionMatrix();
+    this.resize();
+  }
+
   resize() {
-    // The original 320x200 mode was shown on a 4:3 monitor (non-square pixels).
-    const aspect = 4 / 3;
+    // The original 320x200 mode was shown on a 4:3 monitor (non-square pixels); the map alone is square.
+    const crop = this.cropRect;
+    const aspect = crop === FULL_SCREEN ? 4 / 3 : crop.w / crop.h;
     // fits the canvas's container (the stage next to the command bar), or the window
     const box = this.gl.domElement.parentElement;
     let w = box?.clientWidth || window.innerWidth, h = box?.clientHeight || window.innerHeight;
     if (w / h > aspect) w = Math.floor(h * aspect); else h = Math.floor(w / aspect);
     // whole horizontal scale (every original pixel column the same width) when there is room
-    if (w >= 2 * SCREEN_W) { w = Math.floor(w / SCREEN_W) * SCREEN_W; h = Math.floor(w / aspect); }
+    // (the compact map fills its cell instead, aligned with the panels around it)
+    if (crop === FULL_SCREEN && w >= 2 * crop.w) { w = Math.floor(w / crop.w) * crop.w; h = Math.floor(w / aspect); }
     this.gl.setPixelRatio(window.devicePixelRatio);
     this.gl.setSize(w, h);
   }
@@ -337,9 +360,9 @@ export class Renderer {
     this.gl.render(this.scene, this.camera);
     if (this.view3d) {
       // Map viewport in GL coordinates (origin bottom-left), drawn over the (hidden) tile grid.
-      const sx = size.x / SCREEN_W, sy = size.y / SCREEN_H;
+      const c = this.cropRect, sx = size.x / c.w, sy = size.y / c.h;
       const vw = VIEW_TILES * TILE * sx, vh = VIEW_TILES * TILE * sy;
-      const vx = VIEW_X * sx, vy = size.y - (VIEW_Y * sy + vh);
+      const vx = (VIEW_X - c.x) * sx, vy = size.y - ((VIEW_Y - c.y) * sy + vh);
       this.gl.setViewport(vx, vy, vw, vh);
       this.gl.setScissor(vx, vy, vw, vh);
       this.gl.setScissorTest(true);
@@ -360,9 +383,13 @@ export class Renderer {
   /** Copies the drawn pixels of `r` to a texture and draws them back with their colours inverted. */
   private invertRect(r: ScreenRect) {
     const db = this.gl.getDrawingBufferSize(new THREE.Vector2());
-    const sx = db.x / SCREEN_W, sy = db.y / SCREEN_H;
-    const x0 = Math.round(r.x * sx), x1 = Math.round((r.x + r.w) * sx);
-    const y0 = Math.round(db.y - (r.y + r.h) * sy), y1 = Math.round(db.y - r.y * sy); // GL rows start at the bottom
+    const c = this.cropRect, sx = db.x / c.w, sy = db.y / c.h;
+    // the part of the area the canvas shows (the compact layout shows the viewport only)
+    const left = Math.max(r.x, c.x), right = Math.min(r.x + r.w, c.x + c.w), top = Math.max(r.y, c.y), bottom = Math.min(r.y + r.h, c.y + c.h);
+    if (right <= left || bottom <= top) return;
+    r = { x: left, y: top, w: right - left, h: bottom - top };
+    const x0 = Math.round((r.x - c.x) * sx), x1 = Math.round((r.x + r.w - c.x) * sx);
+    const y0 = Math.round(db.y - (r.y + r.h - c.y) * sy), y1 = Math.round(db.y - (r.y - c.y) * sy); // GL rows start at the bottom
     const w = x1 - x0, h = y1 - y0;
     if (w <= 0 || h <= 0) return;
     let tex = this.invertTex;

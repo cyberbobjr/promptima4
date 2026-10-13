@@ -14,7 +14,8 @@
     "font": "auto",
     "smoothing": false,
     "keepAspect": true,
-    "title": "modern"
+    "title": "modern",
+    "layout": "modern"
   },
   "controls": {
     "tapToMove": true,

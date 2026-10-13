@@ -13,7 +13,7 @@ import { DIRS, tileAt, type Dir } from "../../game/maps";
 import { findPath, findPathNextTo, gridFor, type PathGrid } from "../../game/pathfinding";
 import { CLASS_TILES, isTalkOver, T } from "../../game/tiles";
 import { WALKABLE_TILES } from "../../data/tables";
-import { TILE, VIEW_TILES, VIEW_X, VIEW_Y, SCREEN_W, SCREEN_H } from "../../render/renderer";
+import { TILE, VIEW_TILES, VIEW_X, VIEW_Y } from "../../render/renderer";
 import { h } from "./dom";
 import type { Shell } from "./shell";
 import "./pointer.css";
@@ -64,7 +64,9 @@ export function installPointer(shell: Shell, g: Game): void {
   function cellAt(cx: number, cy: number): { dx: number; dy: number } | null {
     const r = canvas.getBoundingClientRect();
     if (!r.width || !r.height) return null;
-    const lx = ((cx - r.left) / r.width) * SCREEN_W, ly = ((cy - r.top) / r.height) * SCREEN_H;
+    // the canvas shows g.r.crop of the 320x200 screen (the map alone in the compact layout)
+    const c = g.r.crop;
+    const lx = c.x + ((cx - r.left) / r.width) * c.w, ly = c.y + ((cy - r.top) / r.height) * c.h;
     const vx = Math.floor((lx - VIEW_X) / TILE), vy = Math.floor((ly - VIEW_Y) / TILE);
     if (lx < VIEW_X || ly < VIEW_Y || vx >= VIEW_TILES || vy >= VIEW_TILES) return null;
     return { dx: vx - HALF, dy: vy - HALF };
@@ -73,9 +75,9 @@ export function installPointer(shell: Shell, g: Game): void {
   /** Client rectangle of a viewport square, relative to the overlay. */
   function cellRect(dx: number, dy: number) {
     const r = canvas.getBoundingClientRect(), o = overlay.getBoundingClientRect();
-    const sx = r.width / SCREEN_W, sy = r.height / SCREEN_H;
+    const c = g.r.crop, sx = r.width / c.w, sy = r.height / c.h;
     return {
-      left: r.left - o.left + (VIEW_X + (dx + HALF) * TILE) * sx, top: r.top - o.top + (VIEW_Y + (dy + HALF) * TILE) * sy,
+      left: r.left - o.left + (VIEW_X + (dx + HALF) * TILE - c.x) * sx, top: r.top - o.top + (VIEW_Y + (dy + HALF) * TILE - c.y) * sy,
       width: TILE * sx, height: TILE * sy,
     };
   }

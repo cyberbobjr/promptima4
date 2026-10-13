@@ -41,6 +41,13 @@ body { font-family: var(--ui-font); font-size: 11px; -webkit-text-size-adjust: n
   .bar-cmds { grid-area: cmds; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); align-content: start; }
   .bar-keys { grid-area: keys; }
 }
+/* phones: a compact bar (smaller buttons, commands in columns) so that the map keeps most of the height */
+@media (max-aspect-ratio: 1/1) and (max-width: 520px) {
+  .bar { --tap: 36px; max-height: 36vh; padding: 6px; gap: 6px; }
+  .bar-menus .menu, .bar-cmds .cmd, .bar-keys { font-size: 7px; }
+  .bar-cmds { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
+  .bar-cmds .cmd { gap: 4px; padding: 2px 4px; }
+}
 #app.no-bar .bar, #app.bar-folded .bar { display: none; }
 /* handle folding the bar: a small tab on the stage edge next to the bar */
 .bar-handle { position: absolute; z-index: 10; right: 0; top: 50%; transform: translateY(-50%); width: 14px; height: 56px; padding: 0;

@@ -369,33 +369,51 @@ const HANDLERS: ((c: Ctx) => Promise<void> | void)[] = [
   (c) => changeLevel(c, 1), // Z
 ];
 
+/** The mixtures in columns of 8 rows, 5 characters apart from column 24 (1000:4C42): [text, col, row]. */
+function mixtureCells(g: Game): [string, number, number][] {
+  const out: [string, number, number][] = [];
+  let row = 1, col = 24;
+  for (let i = 0; i < 26 && col <= 0x26; i++) {
+    const n = g.save.mixtures[i];
+    if (!n) continue;
+    out.push([`${String.fromCharCode(65 + i)}-${String(n).padStart(2, "0")}`, col, row]);
+    if (++row === 9) { row = 1; col += 5; }
+  }
+  return out;
+}
+
 /** Mixtures list in the status area while choosing a spell (1000:4C42). */
 function mixtureList(g: Game) {
   return addDrawHook(g, (r) => {
     clearStatusRows(r);
     drawStatusTitle(r, M.mixturesTitle);
-    let row = 1, col = 24;
-    for (let i = 0; i < 26 && col <= 0x26; i++) {
-      const n = g.save.mixtures[i];
-      if (!n) continue;
-      r.drawText(`${String.fromCharCode(65 + i)}-${String(n).padStart(2, "0")}`, col, row);
-      if (++row === 9) { row = 1; col += 5; }
-    }
+    for (const [text, col, row] of mixtureCells(g)) r.drawText(text, col, row);
+  }, {
+    panel: () => {
+      const rows = new Array<string>(8).fill("");
+      for (const [text, col, row] of mixtureCells(g)) rows[row - 1] = rows[row - 1].padEnd(col - 24) + text;
+      return { title: M.mixturesTitle, rows };
+    },
   });
 }
 
-/** Reagents list in the status area while mixing (1000:4BC7): "A-5-Sulfur Ash". */
+/** The reagents owned, one line each (1000:4BC7): "A-5-Sulfur Ash". */
+function reagentLines(g: Game): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < 8; i++) {
+    const n = g.save.reagents[i];
+    if (n) out.push(`${String.fromCharCode(65 + i)}${String(n).padStart(2, "-")}-${REAGENTS[i]}`.slice(0, 16));
+  }
+  return out;
+}
+
+/** Reagents list in the status area while mixing (1000:4BC7). */
 function reagentList(g: Game) {
   return addDrawHook(g, (r) => {
     clearStatusRows(r);
     drawStatusTitle(r, M.reagentsTitle);
-    let row = 1;
-    for (let i = 0; i < 8; i++) {
-      const n = g.save.reagents[i];
-      if (!n) continue;
-      r.drawText(`${String.fromCharCode(65 + i)}${String(n).padStart(2, "-")}-${REAGENTS[i]}`.slice(0, 16), 24, row++);
-    }
-  });
+    reagentLines(g).forEach((line, i) => r.drawText(line, 24, 1 + i));
+  }, { panel: () => ({ title: M.reagentsTitle, rows: reagentLines(g) }) });
 }
 
 /** Cast 1000:6E4A. `api` is set in combat (caster = the member whose turn it is). */

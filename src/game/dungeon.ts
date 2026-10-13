@@ -120,6 +120,9 @@ class DungeonRun {
     }, tween);
   }
 
+  /** Modern layout: the level and the facing shown in the frame by hud(). */
+  caption(): string[] | null { return this.fighting ? null : [fmt(M.level, { n: this.level + 1 }), M.dirLabel + dirLabel(this.dir)]; }
+
   /** Viewport layer: the 3D view, hidden (black) while a peer map is shown. */
   scene3d() { return this.peer ? null : { scene: this.view.scene, camera: this.view.camera }; }
 
@@ -625,7 +628,7 @@ export async function runDungeon(g: Game, loc: LocationDef, resume?: { map: Uint
     s.x = 1; s.y = 1; s.orientation = 2; s.dngLevel = 0;
   }
   // The 3D view in the viewport, the level/direction in the frame and the peer map.
-  const layer = g.layers.push({ name: "dungeon", view: () => null, scene3d: () => run.scene3d(), draw: () => run.hud() });
+  const layer = g.layers.push({ name: "dungeon", view: () => null, scene3d: () => run.scene3d(), draw: () => run.hud(), caption: () => run.caption() });
   try {
     await run.run();
   } finally {

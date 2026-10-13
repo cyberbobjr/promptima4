@@ -1,0 +1,16 @@
+{
+  "hud.party": "Groupe",
+  "hud.console": "Messages",
+  "hud.food": "Nourriture",
+  "hud.gold": "Or",
+  "hud.effect": "Sort actif",
+  "hud.moons": "Trammel et Felucca",
+  "hud.wind.0": "Vent : ouest",
+  "hud.wind.1": "Vent : nord",
+  "hud.wind.2": "Vent : est",
+  "hud.wind.3": "Vent : sud",
+  "hud.status.P": "Empoisonné",
+  "hud.status.S": "Endormi",
+  "hud.status.D": "Mort",
+  "hud.status.G": "En forme"
+}

@@ -29,6 +29,15 @@ export interface Layer {
   scene3d?: () => { scene: Scene; camera: Camera } | null;
   /** Replaces the party list. */
   status?: () => StatusPanel | null;
+  /**
+   * Modern layout only (src/ui/dom/hud.ts): a list shown in place of the party panel by a layer that draws
+   * it on the classic screen itself (`draw`), such as the mixtures while casting.
+   */
+  panel?: () => StatusPanel | null;
+  /** Modern layout only: lines shown with the food and gold (the dungeon level and facing of the frame). */
+  caption?: () => string[] | null;
+  /** Uses the whole 320x200 screen (visions, Codex): the modern layout shows it in place of the map. */
+  wide?: boolean;
   /** Drawn after the base screen and the layers below. */
   draw?: (r: Renderer) => void;
   /**

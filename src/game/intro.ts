@@ -9,7 +9,6 @@ import { Keys, Screen } from "../intro/screen";
 import { Title } from "../intro/title";
 import type { Game } from "./game";
 import { MSG_INTRO } from "./texts/intro";
-import { config } from "../config/config";
 import type { ModernTitle } from "../ui/dom/title";
 
 /** The saved game to continue, or null when there is none (PARTY.SAV with no members). */
@@ -22,7 +21,7 @@ async function savedGame(): Promise<SaveGame | null> {
 
 /** Returns the save to play: a continued game or a freshly created character. */
 export async function runIntro(g: Game): Promise<SaveGame> {
-  if (g.modernTitle && config().display.title !== "classic") return runModernIntro(g, g.modernTitle);
+  if (g.modernTitle) return runModernIntro(g, g.modernTitle);
   const data = await loadTitleData();
   const scr = new Screen(g.r.assets);
   const keys = new Keys(g.input, scr);

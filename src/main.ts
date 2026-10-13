@@ -20,6 +20,7 @@ import * as speaker from "./audio/speaker";
 import { initSoundPacks } from "./audio/sounds";
 import { installMusic } from "./audio/music";
 import { createModernTitle } from "./ui/dom/title";
+import { installHud } from "./ui/dom/hud";
 import "./pwa";
 
 async function main() {
@@ -45,7 +46,10 @@ async function main() {
   installPanels(shell, game);
   installPointer(shell, game);
   installMusic(game);
-  game.modernTitle = createModernTitle(shell.overlay, game);
+  // ?title= and ?layout= (classic|modern) override the settings (the screenshot scenarios use the 1987 screens)
+  const params = new URLSearchParams(location.search);
+  if ((params.get("title") ?? cfg.display.title) !== "classic") game.modernTitle = createModernTitle(shell.overlay, game);
+  if ((params.get("layout") ?? cfg.display.layout) !== "classic") installHud(shell, game);
   renderer.resize();
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game; // used by automated tests
   if (import.meta.env.DEV) (window as unknown as { __speaker: typeof speaker }).__speaker = speaker;

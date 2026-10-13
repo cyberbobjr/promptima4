@@ -30,7 +30,7 @@ npx tsx tools/packs/upscale.ts --algo scale4x # Scale4x tile pack -> assets/pack
 
 - Tests that need the original game files use `tests/gamedir.ts` (`U4_GAME_DIR`, default GOG path) and are skipped when it is absent.
 - Headless tools (`tools/scenarios.mjs`, `tools/ui-shot.mjs`, `tools/page-eval.mjs`, `tools/page-errors.mjs`) drive a local Chrome via puppeteer-core against the running dev server; output goes to `test-output/` (git-ignored, contains original graphics).
-- Dev URL flags: `?skipintro` (start on the world map), `?debug` (F12 debug panel), `?lang=fr`, `?pack=<name>`. In dev, `window.__game` exposes the `Game` instance and `window.__toDungeon(id)` jumps to a dungeon entrance; scenarios script the game through these.
+- Dev URL flags: `?skipintro` (start on the world map), `?debug` (F12 debug panel), `?lang=fr`, `?pack=<name>`, `?layout=classic` (the 1987 screen instead of the responsive one, src/ui/dom/hud.ts), `?title=classic` (TITLE.EXE's title instead of src/ui/dom/title.ts); the scenarios use both. In dev, `window.__game` exposes the `Game` instance and `window.__toDungeon(id)` jumps to a dungeon entrance; scenarios script the game through these.
 - Start Vite and headless runs from the PowerShell tool: the Bash tool is network-sandboxed. Restart Vite with `--force` after installing npm packages.
 - Write files containing backslashes (`\n`, `\u0012`, Windows paths) with Write/Edit, not Bash heredocs.
 
