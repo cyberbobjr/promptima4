@@ -19,6 +19,7 @@ import { installPointer } from "./ui/dom/pointer";
 import * as speaker from "./audio/speaker";
 import { initSoundPacks } from "./audio/sounds";
 import { installMusic } from "./audio/music";
+import { createModernTitle } from "./ui/dom/title";
 import "./pwa";
 
 async function main() {
@@ -44,6 +45,7 @@ async function main() {
   installPanels(shell, game);
   installPointer(shell, game);
   installMusic(game);
+  game.modernTitle = createModernTitle(shell.overlay, game);
   renderer.resize();
   if (import.meta.env.DEV) (window as unknown as { __game: Game }).__game = game; // used by automated tests
   if (import.meta.env.DEV) (window as unknown as { __speaker: typeof speaker }).__speaker = speaker;

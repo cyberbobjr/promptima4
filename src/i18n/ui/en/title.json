@@ -1,0 +1,19 @@
+{
+  "title.lord": "Lord Promptish",
+  "title.and": "AND",
+  "title.company": "TOKEN SYSTEMS, INC.",
+  "title.present": "PRESENT",
+  "title.name": "Promptima",
+  "title.number": "IV",
+  "title.subtitle": "Quest of the Avatar",
+  "title.tagline": "In another world, in a context window to come.",
+  "title.options": "Options:",
+  "title.replay": "Re-prompt the Intro",
+  "title.resume": "Resume from Cache",
+  "title.new": "Start a New Session",
+  "title.credits": "Conversion by Claude Code",
+  "title.creditsSmall": "no human was hallucinated · © 2026",
+  "title.hint": "Arrows and Enter, or a click",
+  "title.musicOn": "Mute the music",
+  "title.musicOff": "Play the music"
+}

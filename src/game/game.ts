@@ -28,6 +28,7 @@ import { runDungeon } from "./dungeon";
 import { LOCATIONS } from "./locations";
 import { Sky, checkMoongate } from "./world/sky";
 import { decodeObjects, type WorldObject } from "./world/objects";
+import type { ModernTitle } from "../ui/dom/title";
 import { partyDeath, pirateAmbush, worldFight, worldTurn } from "./world/monsters";
 import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
@@ -53,6 +54,8 @@ export class Game {
   /** party position on the current map (mirrors save.x/y on the overworld) */
   px = 0; py = 0;
   objects: WorldObject[] = [];
+  /** The port's title screen (DOM, set by the shell); null: TITLE.EXE's title only. */
+  modernTitle: ModernTitle | null = null;
   readonly con = new Console();
   /** Moons, moongates and wind. */
   readonly sky = new Sky();

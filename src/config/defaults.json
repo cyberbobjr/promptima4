@@ -13,7 +13,8 @@
   "display": {
     "font": "auto",
     "smoothing": false,
-    "keepAspect": true
+    "keepAspect": true,
+    "title": "modern"
   },
   "controls": {
     "tapToMove": true,

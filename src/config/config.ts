@@ -12,7 +12,8 @@ export interface Config {
   /** Tile pack folder name under assets (tiles/<pack>/pack.json). */
   tiles: { pack: string };
   /** font: "auto" = original 8x8 font for English with the original tiles, the modern font otherwise. */
-  display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean };
+  /** title: "modern" = the port's title screen (src/ui/dom/title.ts), "classic" = TITLE.EXE's. */
+  display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean; title: "modern" | "classic" };
   controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number };
   /**
    * Sound effects; volume 0..1. V)olume toggles `enabled` in the game. pack: a sound pack under
