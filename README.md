@@ -16,6 +16,11 @@ decompiled with Ghidra. Game rules, formulas and tables cite the original functi
 
 ## Screenshots
 
+### The 2026 edition
+
+What a fresh clone plays (and what [promptima.app](https://promptima.app) shows): the PixelLab tiles and
+illustrations, the responsive screen and the edition's title.
+
 <table>
 <tr><td width="50%"><img src="docs/screenshots/world.png" alt="The overworld"><br><sub>The overworld</sub></td><td width="50%"><img src="docs/screenshots/castle.png" alt="Lord British's castle"><br><sub>Lord British's castle</sub></td></tr>
 <tr><td width="50%"><img src="docs/screenshots/combat.png" alt="Combat"><br><sub>Combat</sub></td><td width="50%"><img src="docs/screenshots/dungeon.png" alt="A 3D dungeon"><br><sub>A 3D dungeon</sub></td></tr>
@@ -24,7 +29,20 @@ decompiled with Ghidra. Game rules, formulas and tables cite the original functi
 
 <p align="center"><img src="docs/screenshots/tablet.png" alt="The responsive screen on a tablet (portrait), with the touch command bar" width="420"><br><sub>The responsive screen on a tablet (portrait), with the touch command bar</sub></p>
 
-All screenshots show the 2026 edition as shipped in this repository (no original graphics).
+### With the original graphics (for owners of the game)
+
+After `npm run extract` from your own copy (see below), *Options* switch to the 1987 look: EGA tiles, 8x8
+font, the original screen layout and TITLE.EXE's title and character creation.
+
+<table>
+<tr><td width="50%"><img src="docs/screenshots/original/title.png" alt="The 1987 title screen"><br><sub>The 1987 title screen</sub></td><td width="50%"><img src="docs/screenshots/original/world.png" alt="The overworld"><br><sub>The overworld</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/castle.png" alt="Lord British's castle"><br><sub>Lord British's castle</sub></td><td width="50%"><img src="docs/screenshots/original/combat.png" alt="Combat"><br><sub>Combat</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/dungeon.png" alt="A dungeon"><br><sub>A dungeon</sub></td><td width="50%"><img src="docs/screenshots/original/creation.png" alt="Character creation"><br><sub>Character creation</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/world-map.png" alt="The world map (F3) with the original tiles"><br><sub>The world map (F3) with the original tiles</sub></td><td width="50%"></td></tr>
+</table>
+
+These captures show Ultima IV's original graphics, which belong to their rights holders; the files
+themselves are never in this repository.
 
 ## Game data and the original graphics
 

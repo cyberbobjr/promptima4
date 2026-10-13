@@ -16,6 +16,11 @@ fonctions originales (`1000:xxxx`) et des données (`DS:xxxx`). Voir `docs/RE_NO
 
 ## Captures
 
+### L'édition 2026
+
+Ce que joue un clone frais (et ce que montre [promptima.app](https://promptima.app)) : les tuiles et
+illustrations PixelLab, l'écran adaptatif et le titre de l'édition.
+
 <table>
 <tr><td width="50%"><img src="docs/screenshots/world.png" alt="Le monde"><br><sub>Le monde</sub></td><td width="50%"><img src="docs/screenshots/castle.png" alt="Le château de Lord British"><br><sub>Le château de Lord British</sub></td></tr>
 <tr><td width="50%"><img src="docs/screenshots/combat.png" alt="Un combat"><br><sub>Un combat</sub></td><td width="50%"><img src="docs/screenshots/dungeon.png" alt="Un donjon en 3D"><br><sub>Un donjon en 3D</sub></td></tr>
@@ -24,7 +29,20 @@ fonctions originales (`1000:xxxx`) et des données (`DS:xxxx`). Voir `docs/RE_NO
 
 <p align="center"><img src="docs/screenshots/tablet.png" alt="L'écran adaptatif sur tablette (portrait), avec la barre de commandes tactile" width="420"><br><sub>L'écran adaptatif sur tablette (portrait), avec la barre de commandes tactile</sub></p>
 
-Toutes les captures montrent l'édition 2026 telle que fournie dans ce dépôt (aucun graphisme original).
+### Avec les graphismes originaux (pour qui possède le jeu)
+
+Après `npm run extract` depuis votre propre copie (voir plus bas), les *Options* passent au style de 1987 :
+tuiles EGA, police 8x8, disposition d'écran d'origine, titre et création du personnage de TITLE.EXE.
+
+<table>
+<tr><td width="50%"><img src="docs/screenshots/original/title.png" alt="L'écran titre de 1987"><br><sub>L'écran titre de 1987</sub></td><td width="50%"><img src="docs/screenshots/original/world.png" alt="Le monde"><br><sub>Le monde</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/castle.png" alt="Le château de Lord British"><br><sub>Le château de Lord British</sub></td><td width="50%"><img src="docs/screenshots/original/combat.png" alt="Un combat"><br><sub>Un combat</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/dungeon.png" alt="Un donjon"><br><sub>Un donjon</sub></td><td width="50%"><img src="docs/screenshots/original/creation.png" alt="La création du personnage"><br><sub>La création du personnage</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/original/world-map.png" alt="La carte du monde (F3) avec les tuiles originales"><br><sub>La carte du monde (F3) avec les tuiles originales</sub></td><td width="50%"></td></tr>
+</table>
+
+Ces captures montrent les graphismes originaux d'Ultima IV, qui appartiennent à leurs ayants droit ; les
+fichiers eux-mêmes ne sont jamais dans ce dépôt.
 
 ## Données du jeu et graphismes originaux
 

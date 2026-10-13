@@ -25,7 +25,8 @@ SOFTWARE.
 Scope: this license covers the source code and documentation of this
 repository. It does not cover the content extracted from Ultima IV: Quest of
 the Avatar (maps, dialogues, texts and tables under assets/original/, their
-translations under assets/i18n/, and any original graphics extracted locally),
+translations under assets/i18n/, any original graphics extracted locally, and the
+screenshots of them in docs/screenshots/original/),
 which remains the property of its rights holders. The edition's artwork, sound
 effects and music (assets/packs/pixellab/, assets/sounds/, assets/music/,
 public/icons/) are (c) 2026 Benjamin Marchand, all rights reserved, as stated on the
