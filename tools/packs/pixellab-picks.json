@@ -16,6 +16,11 @@
     "tree": "1", "portal": "1", "outside": "1", "inside": "1", "wagon": "1", "gypsy": "1", "abacus": "1",
     "card-honesty": "2-1", "card-compassion": "2", "card-valor": "2-3", "card-justice": "2-1",
     "card-sacrifice": "2-3", "card-honor": "2-2", "card-spirituality": "2-3", "card-humility": "2-1",
-    "card-truth": "2-1", "card-love": "2", "card-courage": "2-2", "key": "2", "infinity": "2", "stones": "2"
+    "card-truth": "2-1", "card-love": "2", "card-courage": "2-2", "key": "2", "infinity": "2", "stones": "2",
+    "spell-F": "1-2", "spell-H": "1",
+    "spell-A": "1", "spell-B": "1-3", "spell-C": "1-15", "spell-D": "1-5", "spell-E": "1-15", "spell-G": "1",
+    "spell-I": "1-2", "spell-J": "1", "spell-K": "1", "spell-L": "1", "spell-M": "1", "spell-N": "1",
+    "spell-O": "1", "spell-P": "1-3", "spell-Q": "1", "spell-R": "1-2", "spell-S": "1", "spell-T": "1-1",
+    "spell-U": "1", "spell-V": "1", "spell-W": "1", "spell-X": "1-3", "spell-Y": "1", "spell-Z": "1"
   }
 }

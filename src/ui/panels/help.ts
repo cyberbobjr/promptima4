@@ -2,6 +2,7 @@
 // the commands of the current mode, every command by context, the spells with their reagents, the controls
 // (keyboard, mouse, touch) and a short spoiler-light guide to the quest. Command lists come from the registry plus the keys the
 // dungeon and combat loops handle themselves (the same list as the command bar).
+import { assets } from "../../assets/store";
 import { REAGENTS, SPELLS } from "../../data/tables";
 import type { CommandContext } from "../../game/commands";
 import type { Game } from "../../game/game";
@@ -76,7 +77,12 @@ function spellsSection(g: Game): HTMLElement {
     return h("tr", {},
       h("td", {}, kbd(sp.letter)),
       // name and description as separate blocks (readable even without the stylesheet)
-      h("th", { scope: "row" }, h("div", {}, sp.name), h("div", { class: "help-spell-desc" }, t(`help.spell.${sp.letter}`))),
+      h("th", { scope: "row" },
+        h("div", { class: "help-spell-head" },
+          // the spell's vignette (PixelLab pack art/spell-<letter>.png), like the drawings of the 1987 spell book
+          h("img", { class: "help-spell-art", src: assets.url(`packs/pixellab/art/spell-${sp.letter}.png`), alt: "", loading: "lazy",
+            onerror: (e: Event) => (e.target as HTMLElement).remove() }),
+          h("div", {}, h("div", {}, sp.name), h("div", { class: "help-spell-desc" }, t(`help.spell.${sp.letter}`))))),
       h("td", { class: "help-num" }, String(sp.mp)),
       h("td", {}, h("span", { class: `help-tag help-sctx-${sp.context}` }, t(`help.sctx.${sp.context}`))),
       h("td", {}, h("div", { class: "help-reagents" }, reagents.map((r) => h("div", {}, r)))),
