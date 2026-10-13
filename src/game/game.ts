@@ -29,6 +29,7 @@ import { LOCATIONS } from "./locations";
 import { Sky, checkMoongate } from "./world/sky";
 import { decodeObjects, type WorldObject } from "./world/objects";
 import type { ModernTitle } from "../ui/dom/title";
+import type { ModernCreation } from "../ui/dom/creation";
 import { partyDeath, pirateAmbush, worldFight, worldTurn } from "./world/monsters";
 import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
@@ -56,6 +57,8 @@ export class Game {
   objects: WorldObject[] = [];
   /** The port's title screen (DOM, set by the shell); null: TITLE.EXE's title only. */
   modernTitle: ModernTitle | null = null;
+  /** The port's character creation (DOM, set with the modern title); null: TITLE.EXE's. */
+  modernCreation: ModernCreation | null = null;
   readonly con = new Console();
   /** Moons, moongates and wind. */
   readonly sky = new Sky();

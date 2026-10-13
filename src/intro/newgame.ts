@@ -19,6 +19,9 @@ async function picture(name: string): Promise<Uint8Array> {
 const rnd8 = () => Math.floor(random() * 8);
 const isEsc = (k: { key: string }) => k.key === "Escape";
 
+/** Outcome of the gypsy's casting (FUN_1000_2c12): the last virtue chosen (the class), karma and stats. */
+export interface CastingResult { virtue: number; karma: number[]; str: number; dex: number; int: number }
+
 export class NewGame {
   /** `leaveTitle` stops the title animations (FUN_1000_3030 clears DS:6E80 before the story). */
   constructor(private readonly scr: Screen, private readonly keys: Keys, private readonly d: TitleData,
@@ -32,7 +35,7 @@ export class NewGame {
       this.leaveTitle();
       await this.story();
       const result = await this.casting();
-      return await this.buildSave(who.name, who.sex, result);
+      return await buildNewSave(this.d, who.name, who.sex, result);
     } catch (e) {
       if (e instanceof Abort) return null;
       throw e;
@@ -188,22 +191,22 @@ export class NewGame {
     }
     return { virtue: last, karma, str: stats[0], dex: stats[1], int: stats[2] };
   }
+}
 
-  /** FUN_1000_2e04: PARTY.NEW with the avatar swapped into slot 0 (class = final virtue). */
-  private async buildSave(name: string, sex: "M" | "F", r: { virtue: number; karma: number[]; str: number; dex: number; int: number }): Promise<SaveGame> {
-    const d = this.d, cls = r.virtue;
-    const save = await assets.newParty();
-    save.x = d.startX[cls];
-    save.y = d.startY[cls];
-    save.members = 1;
-    save.karma = r.karma;
-    [save.players[0], save.players[cls]] = [save.players[cls], save.players[0]];
-    const p = save.players[0];
-    // strcpy into the 16-byte name field: bytes after the terminator keep the template's content
-    for (let i = 0; i <= name.length; i++) p.nameBuf[i] = i < name.length ? name.charCodeAt(i) : 0;
-    p.name = name;
-    p.str = r.str; p.dex = r.dex; p.int = r.int;
-    p.sex = sex === "M" ? 0x0b : 0x0c;
-    return save;
-  }
+/** FUN_1000_2e04: PARTY.NEW with the avatar swapped into slot 0 (class = final virtue). */
+export async function buildNewSave(d: TitleData, name: string, sex: "M" | "F", r: CastingResult): Promise<SaveGame> {
+  const cls = r.virtue;
+  const save = await assets.newParty();
+  save.x = d.startX[cls];
+  save.y = d.startY[cls];
+  save.members = 1;
+  save.karma = r.karma;
+  [save.players[0], save.players[cls]] = [save.players[cls], save.players[0]];
+  const p = save.players[0];
+  // strcpy into the 16-byte name field: bytes after the terminator keep the template's content
+  for (let i = 0; i <= name.length; i++) p.nameBuf[i] = i < name.length ? name.charCodeAt(i) : 0;
+  p.name = name;
+  p.str = r.str; p.dex = r.dex; p.int = r.int;
+  p.sex = sex === "M" ? 0x0b : 0x0c;
+  return save;
 }

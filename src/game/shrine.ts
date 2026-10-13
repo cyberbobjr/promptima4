@@ -3,7 +3,7 @@ import { assets } from "../assets/store";
 import { MANTRAS, MEDITATION, SHRINE_VISIONS, SHRINES } from "../data/tables";
 import type { Game } from "./game";
 import { VIRTUES } from "./locations";
-import { addDrawHook, blankView, loadPicture, PixelLayer, showTiles } from "./endgame/ui";
+import { addDrawHook, blankView, drawPictureInView, editionPicture, loadPicture, PixelLayer, showTiles, VIRTUE_ART } from "./endgame/ui";
 import { askKey, flushKeys, sameText, ticks } from "./prompts";
 import { MSG_MAGIC as M } from "./texts/magic";
 import { playEffect, SFX } from "../audio/speaker";
@@ -54,11 +54,14 @@ async function meditate(g: Game, virtue: number) {
       flushKeys(g);
       await g.getKey();
       say(M.grantedVision);
-      // 1000:E6DF: blank viewport, rune picture OR-ed over it, until a key is pressed
+      // 1000:E6DF: blank viewport, rune picture OR-ed over it, until a key is pressed. With the PixelLab pack,
+      // the edition's card of the virtue in the viewport instead (interpretation of the port)
+      const card = g.r.layered ? await editionPicture(`card-${VIRTUE_ART[virtue]}`) : null;
       const layer = new PixelLayer();
-      layer.or(await loadPicture(SHRINES[virtue].visionPic.toUpperCase() + ".EGA"));
+      if (!card) layer.or(await loadPicture(SHRINES[virtue].visionPic.toUpperCase() + ".EGA"));
       const restoreBlank = blankView(g);
-      const restoreDraw = addDrawHook(g, (r) => layer.draw(r), { wide: true });
+      const restoreDraw = card ? addDrawHook(g, (r) => drawPictureInView(r, card))
+        : addDrawHook(g, (r) => layer.draw(r), { wide: true });
       try {
         flushKeys(g);
         await g.getKey();

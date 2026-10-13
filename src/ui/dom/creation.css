@@ -1,0 +1,46 @@
+﻿/* Character creation of the 2026 edition (creation.ts): an illustration (16:10) above a text box, on the night
+   sky of the title screen; the gypsy's two cards over the abacus picture, the beads drawn in CSS. */
+.nc-root {
+  --nc-frame: #a6a8ff;
+  --nc-gold: #ffd36a;
+  --nc-ink: #f0f0ff;
+  --nc-muted: #a3a8cf;
+  position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; overflow: auto; padding: 12px; box-sizing: border-box;
+  background: radial-gradient(120% 80% at 50% 0%, #0d1030 0%, #070814 65%); color: var(--nc-ink); cursor: pointer;
+}
+.nc-root[hidden] { display: none; }
+.nc-stage { width: min(100%, 960px, calc((100vh - 260px) * 1.6)); display: grid; gap: 12px; }
+.nc-pic { box-sizing: border-box; position: relative; aspect-ratio: 16 / 10; width: 100%; border: 3px solid var(--nc-frame); border-radius: 8px; overflow: hidden; background: #000; }
+.nc-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; opacity: 0; transition: opacity .6s ease; }
+.nc-img.in { opacity: 1; }
+.nc-gate { position: absolute; left: 38%; bottom: 30%; width: 12%; image-rendering: pixelated; filter: drop-shadow(0 0 1.2vw #4df3ff); }
+.nc-gate[hidden] { display: none; }
+.nc-gate.rise { animation: nc-rise 1.4s ease-out both; }
+.nc-gate.sink { animation: nc-rise 1.4s ease-in reverse both; }
+@keyframes nc-rise { from { clip-path: inset(100% 0 0 0); transform: translateY(40%); } to { clip-path: inset(0 0 0 0); transform: none; } }
+
+.nc-cards { position: absolute; inset: 6% 4% auto; display: flex; justify-content: space-between; pointer-events: none; }
+.nc-cards[hidden], .nc-abacus[hidden] { display: none; }
+.nc-card { margin: 0; width: 22%; display: grid; gap: 4px; justify-items: center; }
+.nc-card img { width: 100%; image-rendering: pixelated; border-radius: 4px; box-shadow: 0 6px 18px #000a, 0 0 0 2px #ffd36a55; }
+.nc-card figcaption { font: 400 clamp(9px, 1.4vw, 13px)/1.2 "Press Start 2P", monospace; color: var(--nc-gold); text-shadow: 0 2px 0 #000; text-align: center; }
+.nc-cards.deal .nc-card { animation: nc-deal .5s ease-out both; }
+.nc-cards.deal .nc-card + .nc-card { animation-delay: .15s; }
+@keyframes nc-deal { from { opacity: 0; transform: translateY(-20%) rotate(-6deg); } }
+
+/* the abacus: 8 virtue columns of 7 rounds, chosen beads gold, set aside ones dark */
+.nc-abacus { position: absolute; left: 50%; bottom: 5%; transform: translateX(-50%); display: flex; gap: 6px; padding: 8px 10px; border-radius: 6px; background: #1a0f08cc; box-shadow: 0 0 0 2px #6b4120; }
+.nc-col { display: grid; gap: 3px; padding: 0 2px; border-left: 2px solid #8d5d2e; border-right: 2px solid #8d5d2e; }
+.nc-col i { width: clamp(6px, 1vw, 10px); height: clamp(6px, 1vw, 10px); border-radius: 50%; background: #3a2414; }
+.nc-col i.won { background: radial-gradient(circle at 35% 35%, #fff4c8, #ffd36a 55%, #a8741f); }
+.nc-col i.lost { background: #6a5a4a; opacity: .45; }
+
+.nc-box { box-sizing: border-box; display: grid; gap: 12px; padding: 14px 18px; border: 3px solid var(--nc-frame); border-radius: 8px; background: #000; cursor: default; }
+.nc-text { font: 400 clamp(11px, 1.5vw, 15px)/1.7 "Press Start 2P", monospace; min-height: 4.2em; white-space: pre-line; }
+.nc-controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
+.nc-controls:empty { display: none; }
+.nc-btn { font: 400 12px/1 "Press Start 2P", monospace; color: var(--nc-ink); background: #14142a; border: 1px solid #5555ff; border-radius: 4px; padding: 12px 16px; min-width: 44px; cursor: pointer; }
+.nc-btn:hover, .nc-btn:focus-visible { border-color: var(--nc-gold); color: var(--nc-gold); outline: none; }
+.nc-input { flex: 1; min-width: 10em; font: 400 16px/1 "Press Start 2P", monospace; color: var(--nc-gold); background: #0d0d18; border: 1px solid #5555ff; border-radius: 4px; padding: 10px 12px; }
+.nc-input:focus { outline: 2px solid var(--nc-gold); outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) { .nc-root *, .nc-root *::after { animation: none !important; transition: none !important; } }

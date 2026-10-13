@@ -504,6 +504,51 @@ if (cmd === "avatar" || cmd === "avatar-anim") {
   }
 }
 
+/**
+ * Full illustrations of the character creation (the story and the gypsy's cards), replacing the 1987 pictures:
+ * `art <name> [seed]` -> art-<name>-<seed>.png, one picture per call (above 170 px the API returns one image).
+ * Scenes are 320x200 (the original screen's proportions), cards 96x144.
+ */
+const ART_STYLE = "detailed modern pixel art illustration, rich lighting, cohesive palette, like Eastward or Octopath Traveler";
+export const ART = {
+  // story (FUN_1000_2883 picture order: tree, portal, tree, outside, inside, wagon, gypsy, abacus)
+  tree: ["night countryside: a lonely gnarled oak tree on a grassy hilltop under a starry sky with two moons, a quiet meadow below, no people", [320, 200]],
+  portal: ["a tall shimmering blue magical moongate portal standing on a grassy hilltop at night, glowing light spilling on the grass, stars", [320, 200]],
+  outside: ["a medieval renaissance faire at dusk seen from its entrance: colourful striped tents, banners, lanterns, a dirt path, a few distant fairgoers", [320, 200]],
+  inside: ["inside a busy medieval faire at dusk: stalls with goods, lanterns strung overhead, a juggler and merchants, warm lights", [320, 200]],
+  wagon: ["a painted gypsy fortune teller's wagon with a curtained door and a small lantern, parked at the edge of a faire at night", [320, 200]],
+  gypsy: ["an old kindly fortune teller woman with a headscarf and golden earrings sitting behind a table in a dim wagon, candlelight, mysterious", [320, 200]],
+  abacus: ["a fortune teller's round table seen from above, a wooden abacus with eight columns of beads, tarot cards and a candle, dark cloth", [320, 200]],
+  // the eight virtue cards (TITLE.EXE card pair pictures)
+  "card-honesty": ["tarot card of Honesty: an open hand holding a clear blue crystal, ornate golden border, deep blue background", [96, 144]],
+  "card-compassion": ["tarot card of Compassion: two hands cradling a glowing golden heart, ornate golden border, warm yellow background", [96, 144]],
+  "card-valor": ["tarot card of Valor: a raised sword with a red flame, ornate golden border, deep red background", [96, 144]],
+  "card-justice": ["tarot card of Justice: balanced golden scales, ornate golden border, deep green background", [96, 144]],
+  "card-sacrifice": ["tarot card of Sacrifice: a burning candle giving its light, ornate golden border, orange background", [96, 144]],
+  "card-honor": ["tarot card of Honor: a knight's helmet with a white plume and a shield, ornate golden border, purple background", [96, 144]],
+  "card-spirituality": ["tarot card of Spirituality: a radiant ankh above clouds, ornate golden border, white and pale gold background", [96, 144]],
+  "card-humility": ["tarot card of Humility: a small humble flower growing from bare earth, ornate golden border, dark earth background", [96, 144]],
+  // the Codex (endgame): the three principles, the key of three parts, the rune of infinity, the stone circle
+  "card-truth": ["tarot card of Truth: a radiant open eye above a pillar of light, ornate golden border, deep indigo background", [96, 144]],
+  "card-love": ["tarot card of Love: two intertwined glowing flames forming a heart, ornate golden border, deep rose background", [96, 144]],
+  "card-courage": ["tarot card of Courage: a roaring lion's head in front of a rising sun, ornate golden border, crimson and gold background", [96, 144]],
+  key: ["an ornate magical key made of three joined parts, gold, silver and bronze, glowing softly, on a black background", [128, 128]],
+  infinity: ["a glowing golden rune of infinity, an endless knot of light, radiant, on a black background", [128, 128]],
+  stones: ["a ring of ancient standing stones on a grassy hill at dawn, mist, soft golden light, peaceful, no people", [320, 200]],
+};
+if (cmd === "art") {
+  const seed = Number(process.argv[4] ?? 1);
+  const [desc, [w, h]] = ART[arg];
+  // the cards are captioned by the game in the player's language: no lettering in the picture (seed 1 had some)
+  const words = arg.startsWith("card-") ? ", no text, no letters, no words, no title banner" : "";
+  const r = await job("/generate-image-v2", {
+    description: `${desc}${words}, ${ART_STYLE}`, image_size: { width: w, height: h }, no_background: false, seed,
+  }, `art-${arg}-${seed}`);
+  const imgs = images(r.last_response ?? r);
+  imgs.forEach((img, i) => save(img, path.join(OUT, "art", `${arg}-${seed}${i ? `-${i}` : ""}.png`)));
+  console.log(`art ${arg}: ${imgs.length} image(s); usage ${JSON.stringify(r.usage)}`);
+}
+
 if (cmd === "scene") await scene();
 else console.log(`balance ${JSON.stringify(await call("GET", "/balance"))}`);
 

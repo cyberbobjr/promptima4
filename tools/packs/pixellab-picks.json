@@ -11,5 +11,11 @@
     "brick-floor": "paving-1/5", "wood-floor": "floors-1/2", "dungeon-floor": "floors-1/4", "wall": "floors-1/6",
     "solid": "fixes-1/12", "rubble": "floors-1/10", "door": "floors-1/12", "locked-door": "floors-1/14",
     "lava": "fields-1/1", "poison-field": "fields-1/5", "energy-field": "fields-1/8", "fire-field": "fixes-1/2", "sleep-field": "fields-1/12"
+  },
+  "art": {
+    "tree": "1", "portal": "1", "outside": "1", "inside": "1", "wagon": "1", "gypsy": "1", "abacus": "1",
+    "card-honesty": "2-1", "card-compassion": "2", "card-valor": "2-3", "card-justice": "2-1",
+    "card-sacrifice": "2-3", "card-honor": "2-2", "card-spirituality": "2-3", "card-humility": "2-1",
+    "card-truth": "2-1", "card-love": "2", "card-courage": "2-2", "key": "2", "infinity": "2", "stones": "2"
   }
 }

@@ -70,6 +70,14 @@ async function runModernIntro(g: Game, title: ModernTitle): Promise<SaveGame> {
       }
       title.hide();
       const data = await loadTitleData();
+      if (g.modernCreation) {
+        const save = await g.modernCreation.run(data);
+        if (save) {
+          await writeSave("PARTY.SAV", encodeSave(save));
+          return save;
+        }
+        continue;
+      }
       const scr = new Screen(g.r.assets);
       const keys = new Keys(g.input, scr);
       const layer = g.layers.push({ name: "intro", fullscreen: true, draw: (r) => scr.draw(r, now()) });

@@ -46,6 +46,24 @@ export function showTiles(g: Game, tiles: ArrayLike<number>): () => void {
   return () => layer.remove();
 }
 
+/** Illustration names of the eight virtues (the edition's cards: art/card-<name>.png of the PixelLab pack). */
+export const VIRTUE_ART = ["honesty", "compassion", "valor", "justice", "sacrifice", "honor", "spirituality", "humility"];
+
+/** One of the 2026 edition's illustrations (assets/packs/pixellab/art/<name>.png), or null when unavailable. */
+export async function editionPicture(name: string): Promise<HTMLImageElement | null> {
+  const img = new Image();
+  img.src = assets.url(`packs/pixellab/art/${name}.png`);
+  try { await img.decode(); return img; } catch { return null; }
+}
+
+/** Draws a picture centred in the map viewport, scaled to fit it (over a blank view). */
+export function drawPictureInView(r: Renderer, img: HTMLImageElement) {
+  const side = VIEW_TILES * TILE, k = Math.min(side / img.naturalWidth, side / img.naturalHeight) * 0.92;
+  const w = img.naturalWidth * k, h = img.naturalHeight * k;
+  r.ui.imageSmoothingEnabled = false;
+  r.ui.drawImage(img, VIEW_X + (side - w) / 2, VIEW_Y + (side - h) / 2, w, h);
+}
+
 /** A 320x200 indexed layer drawn over the screen; colour 0 is transparent (pictures are OR-ed by EGA.DRV). */
 export class PixelLayer {
   readonly px = new Uint8Array(320 * 200);

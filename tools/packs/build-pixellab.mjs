@@ -78,6 +78,33 @@ const pickedPlace = (name) => {
   return path.join(SRC, `sprite-${name}${seed ? `-${seed}` : ""}`, `${i}.png`);
 };
 
+/** Paints the n outer rows and columns black. */
+function blackEdges(img, n) {
+  const W = img.width, H = img.height;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (x < n || y < n || x >= W - n || y >= H - n) img.data.set([0, 0, 0, 255], (y * W + x) * 4);
+  return img;
+}
+
+/** Makes transparent the region of near-uniform colour connected to the four corners (a flat background). */
+function clearBackground(img) {
+  const W = img.width, H = img.height, d = img.data, seen = new Uint8Array(W * H), stack = [];
+  const ref = [0, W - 1, (H - 1) * W, H * W - 1];
+  for (const p of ref) stack.push([p, p]);
+  while (stack.length) {
+    const [p, r] = stack.pop();
+    if (seen[p]) continue;
+    const dist = Math.abs(d[p * 4] - d[r * 4]) + Math.abs(d[p * 4 + 1] - d[r * 4 + 1]) + Math.abs(d[p * 4 + 2] - d[r * 4 + 2]);
+    if (dist > 60) continue;
+    seen[p] = 1;
+    d[p * 4 + 3] = 0;
+    const x = p % W, y = (p / W) | 0;
+    if (x > 0) stack.push([p - 1, r]); if (x < W - 1) stack.push([p + 1, r]);
+    if (y > 0) stack.push([p - W, r]); if (y < H - 1) stack.push([p + W, r]);
+  }
+  return img;
+}
+
 /** Sprite name -> SHAPES ids (docs/TILEPACK-LAYERED.md, last table). */
 // lbcastle: Lord British's castle, centred on 0x0E and wide enough to cover its wings 0x0D/0x0F (grass)
 const IDS = { dungeon: [9], town: [10], castle: [11], lbcastle: [14], shrine: [30], avatar: [0x1f] };
@@ -309,6 +336,19 @@ const pack = {
 // number arrays on one line
 const json = JSON.stringify(pack, null, 1).replace(/\[\s+([-\d,\s]+?)\s+\]/g, (m, a) => `[${a.split(/,\s*/).join(", ")}]`);
 fs.writeFileSync(path.join(OUT, "pack.json"), json + "\n");
+
+// illustrations of the character creation (pixellab-sample.mjs art): picks.art[name] = "<seed>" or
+// "<seed>-<index>" of art/<name>-<pick>.png, copied to art/<name>.png (not in pack.json: read by name)
+for (const [name, pick] of Object.entries(picks.art ?? {})) {
+  const src = path.join(SRC, "art", `${name}-${pick}.png`);
+  if (!fs.existsSync(src)) { missing.push(`art ${name}`); continue; }
+  fs.mkdirSync(path.join(OUT, "art"), { recursive: true });
+  // cards come on a light flat background around their frame: cleared from the corners
+  if (name.startsWith("card-")) write(path.join(OUT, "art", `${name}.png`), clearBackground(read(src)));
+  // the key and the rune of infinity, on black: a thin light line along two edges of the generated picture
+  else if (name === "key" || name === "infinity") write(path.join(OUT, "art", `${name}.png`), blackEdges(read(src), 4));
+  else fs.copyFileSync(src, path.join(OUT, "art", `${name}.png`));
+}
 console.log(`pack: ${layers.length} layers, ${sprites.length} sprites (${sprites.map((s) => `${s.name}${s.frames > 1 ? `x${s.frames}` : ""} dy ${s.dy}`).join(", ")})`);
 console.log(`tiles: ${tiles.map((t) => t.name).join(", ")}`);
 console.log(`missing: ${missing.join(", ") || "none"}`);
