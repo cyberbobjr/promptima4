@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devlog: the log · Promptima IV</title>
+  <meta name="title-en" content="Devlog: the log · Promptima IV">
+  <meta name="title-fr" content="Journal de développement · Promptima IV">
+  <meta name="description" content="The steps of Promptima IV, from the unpacked executable to promptima.app.">
+  <link rel="stylesheet" href="../legal/legal.css">
+  <link rel="stylesheet" href="devlog.css">
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="brand" href="../">Prompt<span>ima</span> IV</a>
+    <span class="langs"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></span>
+  </div>
+  <nav lang="fr" aria-label="Journal de développement">
+    <a href="index.html">La démarche</a>
+    <a href="journal.html" aria-current="page">Le journal</a>
+    <a href="../">Jouer</a>
+  </nav>
+  <nav lang="en" aria-label="Devlog">
+    <a href="index.html">The approach</a>
+    <a href="journal.html" aria-current="page">The log</a>
+    <a href="../">Play</a>
+  </nav>
+
+<!-- ======================================================================= FRANÇAIS -->
+<article lang="fr">
+  <p class="kicker">DEVLOG</p>
+  <h1>Le journal</h1>
+  <p class="lede">Les étapes du projet, de l'exécutable décompressé jusqu'à promptima.app. Pour le pourquoi et le
+  comment, voir <a href="index.html">la démarche</a>.</p>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBRE 2026</time>
+    <h2>Un moteur jouable, et des tests</h2>
+    <p>Le dépôt public démarre avec un moteur déjà jouable : monde, villes, combats, donjons, sorts, fin de jeu,
+    reconstruits depuis <code>AVATAR.EXE</code> décompressé. Le même jour arrivent le harnais de tests (décodeurs de
+    formats sous Vitest, générateur aléatoire original avec graine, scénarios de captures headless) et le principe
+    fondateur : extraire les fichiers originaux une seule fois, et que le moteur ne les lise plus jamais.</p>
+    <p>Suit un grand ménage d'architecture : les modes de jeu passent par une pile de couches, les commandes
+    s'enregistrent par contexte (monde, ville, donjon, combat), <code>game.ts</code> est découpé par responsabilité.
+    L'agent refactorise ; les scénarios confirment que rien n'a bougé à l'écran.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBRE 2026</time>
+    <h2>Plus un seul texte original dans le code</h2>
+    <p>Infrastructure de traduction, puis le moteur entier passe aux clés : chaque texte original est déclaré par son
+    emplacement dans l'exécutable, jamais par son contenu. Le français suit (frappe insensible aux accents,
+    typographie française dans le retour à la ligne, réponses O/N), avec une police moderne et un guide de
+    traduction.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBRE 2026</time>
+    <h2>Interface HTML, tactile, PWA</h2>
+    <p>Une coque HTML par-dessus le canvas : barre de commandes, inventaire, carte du monde, aide, options, panneau de
+    debug. Toucher une case pour y marcher, menus contextuels, glissements dans les donjons. Le jeu devient une
+    application web installable.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBRE 2026</time>
+    <h2>Fin des donjons, sorts vérifiés, sons d'origine</h2>
+    <p>Repos, sauvegarde et mort de l'équipe en donjon ; salles où le combat continue jusqu'à la sortie ; la fin du
+    Codex dans le bon ordre ; six sorts revérifiés contre l'original puis joués. Les effets du haut-parleur PC sont
+    portés à partir de leur table de paramètres et de leurs 98 points d'appel, jusqu'aux inversions d'écran.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 → 12 OCTOBRE 2026</time>
+    <h2>La quête des tuiles : trois impasses, puis PixelLab</h2>
+    <p>Génération par diffusion locale (ComfyUI) : rejetée, formes perdues et animations incohérentes.
+    Agrandissement pixel-art Scale2x/3x/4x : fidèle mais toujours 1987. PixelLab en mode « fidèle » : correct, sans
+    plus. Puis une refonte moderne en 32 px, palette libre, sprites au-dessus du terrain : « j'adore ». Le moteur
+    apprend les packs à couches (eau animée, transitions de terrain, sprites transparents) pour l'accueillir.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-12">12 OCTOBRE 2026</time>
+    <h2>CLAUDE.md : la mémoire du projet</h2>
+    <p>Les commandes, les règles sur le contenu original et l'architecture sont consignées dans un fichier
+    d'instructions lu à chaque session. C'est ce qui permet de reprendre le travail sans réexpliquer le projet.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBRE 2026</time>
+    <h2>Le pack PixelLab complet</h2>
+    <p>Les personnages animés via l'API, les 22 monstres restants, navires, montures, lieux, objets ; lave et hauts-
+    fonds aux bords irréguliers, phases de portails lunaires lisibles, un château de Lord British sur trois cases et
+    symétrique. Au passage, deux règles fines retrouvées dans le binaire : la porte du château, qui ne s'emprunte que
+    vers le nord, et l'embuscade pirate de l'Abîme.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBRE 2026</time>
+    <h2>Sons et musiques modernes</h2>
+    <p>Un pack sonore généré (effets ElevenLabs, musiques de scène Suno) qui respecte la cadence d'origine : le jeu
+    attend toujours la durée qu'aurait eue l'effet du haut-parleur.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBRE 2026</time>
+    <h2>Promptima IV, en ligne</h2>
+    <p>Un écran titre pour l'édition 2026, un écran de jeu adaptatif (la carte seule sur le canvas, le reste en
+    HTML), des pages légales en deux langues, puis le déploiement sur Cloudflare à l'adresse
+    <a href="../">promptima.app</a>. Premier sprint de remplacement : plus aucun graphisme original sur les écrans de
+    jeu, le pack PixelLab par défaut.</p>
+  </section>
+
+  <section class="entry">
+    <time>À VENIR</time>
+    <h2>La suite</h2>
+    <p>Sprint 2 : création du personnage, visions et images du Codex. Ensuite, une réflexion sur le téléphone :
+    moins de boutons, une interface qui se réduit à ce que demande la question en cours.</p>
+  </section>
+
+  <footer>Promptima IV · <a href="index.html">La démarche</a> · <a href="../legal/mentions-legales.html">Mentions légales</a></footer>
+</article>
+
+<!-- ======================================================================= ENGLISH -->
+<article lang="en">
+  <p class="kicker">DEVLOG</p>
+  <h1>The log</h1>
+  <p class="lede">The project's steps, from the unpacked executable to promptima.app. For the why and the how, see
+  <a href="index.html">the approach</a>.</p>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBER 2026</time>
+    <h2>A playable engine, and tests</h2>
+    <p>The public repository starts with an engine that is already playable: overworld, towns, combat, dungeons,
+    spells, endgame, rebuilt from the unpacked <code>AVATAR.EXE</code>. The same day brings the test harness (format
+    decoders under Vitest, the original random generator with a seed, headless screenshot scenarios) and the founding
+    principle: extract the original files once, and have the engine never read them again.</p>
+    <p>A big architecture cleanup follows: game modes go through a layer stack, commands register per context
+    (world, town, dungeon, combat), <code>game.ts</code> is split by responsibility. The agent refactors; the
+    scenarios confirm nothing moved on screen.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBER 2026</time>
+    <h2>No original text left in the code</h2>
+    <p>Translation infrastructure, then the whole engine moves to keys: every original text is declared by its
+    location in the executable, never by its content. French follows (accent-insensitive typing, French typography
+    in word wrap, Y/N answers in the language's letters), with a modern font and a translation guide.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBER 2026</time>
+    <h2>HTML interface, touch, PWA</h2>
+    <p>An HTML shell over the canvas: command bar, inventory, world map, help, options, debug panel. Tap a square to
+    walk there, context menus, swipes in dungeons. The game becomes an installable web app.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 OCTOBER 2026</time>
+    <h2>Dungeons finished, spells checked, original sounds</h2>
+    <p>Hole up, save and party death in dungeons; rooms where the fight goes on until the party walks out; the Codex
+    ending in the right order; six spells checked again against the original, then played. The PC-speaker effects are
+    ported from their parameter table and their 98 call sites, screen inverts included.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-08">8 → 12 OCTOBER 2026</time>
+    <h2>The tile quest: three dead ends, then PixelLab</h2>
+    <p>Local diffusion (ComfyUI): rejected, shapes lost and animations inconsistent. Scale2x/3x/4x pixel-art
+    upscaling: faithful but still 1987. PixelLab in "faithful" mode: correct, no more. Then a modern 32 px redesign,
+    free palette, sprites over the terrain: "j'adore". The engine learns layered packs (animated water, terrain
+    transitions, transparent sprites) to host it.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-12">12 OCTOBER 2026</time>
+    <h2>CLAUDE.md: the project's memory</h2>
+    <p>Commands, the original-content rules and the architecture are written down in an instructions file read at
+    every session. That is what lets work resume without explaining the project again.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBER 2026</time>
+    <h2>The full PixelLab pack</h2>
+    <p>Characters animated through the API, the 22 remaining monsters, ships, mounts, places, objects; lava and
+    shallows with irregular edges, readable moongate phases, a Lord British's castle three cells wide and symmetric.
+    Along the way, two fine rules found in the binary: the castle gate, which can only be entered northwards, and the
+    pirate ambush of the Abyss.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBER 2026</time>
+    <h2>Modern sounds and music</h2>
+    <p>A generated sound pack (ElevenLabs effects, Suno scene music) that keeps the original pacing: the game still
+    waits as long as the PC-speaker effect would have lasted.</p>
+  </section>
+
+  <section class="entry">
+    <time datetime="2026-10-13">13 OCTOBER 2026</time>
+    <h2>Promptima IV, online</h2>
+    <p>A title screen for the 2026 edition, a responsive game screen (the map alone on the canvas, the rest in HTML),
+    legal pages in two languages, then deployment on Cloudflare at <a href="../">promptima.app</a>. First replacement
+    sprint: no original graphics left on the play screens, the PixelLab pack by default.</p>
+  </section>
+
+  <section class="entry">
+    <time>NEXT</time>
+    <h2>What comes next</h2>
+    <p>Sprint 2: character creation, visions and the Codex pictures. Then some thinking about phones: fewer buttons,
+    an interface that shrinks to what the current question needs.</p>
+  </section>
+
+  <footer>Promptima IV · <a href="index.html">The approach</a> · <a href="../legal/mentions-legales.html">Legal notice</a></footer>
+</article>
+</main>
+<script src="../legal/legal.js"></script>
+</body>
+</html>

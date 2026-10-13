@@ -1,0 +1,31 @@
+/* Devlog of promptima.app: the legal pages' look (../legal/legal.css) widened for longer reading, plus a few blocks. */
+main { max-width: 74ch; }
+.lede { font-size: 19px; color: var(--ink); }
+.kicker { margin: 0 0 10px; font: 400 10px/1.6 "Press Start 2P", monospace; color: var(--gold); letter-spacing: .04em; }
+h3 { margin: 24px 0 6px; font-size: 17px; color: var(--gold); }
+code { font: 14px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace; color: #c9ffff; background: #11132b; padding: 1px 5px; border-radius: 4px; }
+pre { overflow-x: auto; background: var(--panel); border: 1px solid #2a2d5c; border-radius: 8px; padding: 14px 16px; margin: 0 0 16px; }
+pre code { background: none; padding: 0; }
+blockquote { margin: 18px 0; padding: 4px 0 4px 16px; border-left: 3px solid var(--gold); color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 20px 0 26px; }
+.stat { background: var(--panel); border: 1px solid #2a2d5c; border-radius: 8px; padding: 12px 14px; }
+.stat b { display: block; font: 400 16px/1.4 "Press Start 2P", monospace; color: var(--accent); }
+.stat span { font-size: 14px; color: var(--muted); }
+figure { margin: 22px 0 26px; }
+figure svg { display: block; width: 100%; max-width: 420px; height: auto; margin-inline: auto; }
+figcaption { margin-top: 8px; text-align: center; font-size: 14px; color: var(--muted); }
+.loop text { font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--ink); }
+.loop .step { fill: var(--panel); stroke: var(--frame); stroke-width: 1.5; }
+.loop .human { fill: #1a1626; stroke: var(--gold); }
+.loop .arrow { fill: none; stroke: var(--accent); stroke-width: 1.5; }
+.loop .head { fill: var(--accent); }
+.loop .small { font-size: 11px; fill: var(--muted); }
+table { width: 100%; border-collapse: collapse; margin: 0 0 18px; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid #23264d; }
+th { font-weight: 600; color: var(--gold); }
+.table-wrap { overflow-x: auto; }
+.entry { position: relative; padding-left: 22px; margin: 0 0 30px; border-left: 2px solid #2a2d5c; }
+.entry::before { content: ""; position: absolute; left: -7px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+.entry time { font: 400 10px/1.6 "Press Start 2P", monospace; color: var(--gold); }
+.entry h2 { margin-top: 6px; }
+.next { display: inline-block; margin-top: 8px; font: 400 10px/1.6 "Press Start 2P", monospace; }

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Devlog · Promptima IV</title>
+  <meta name="title-en" content="Devlog · Promptima IV">
+  <meta name="title-fr" content="Journal de développement · Promptima IV">
+  <meta name="description" content="How Promptima IV was rebuilt from a 1987 DOS executable by an AI agent driving reverse-engineering tools.">
+  <link rel="stylesheet" href="../legal/legal.css">
+  <link rel="stylesheet" href="devlog.css">
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="brand" href="../">Prompt<span>ima</span> IV</a>
+    <span class="langs"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></span>
+  </div>
+  <nav lang="fr" aria-label="Journal de développement">
+    <a href="index.html" aria-current="page">La démarche</a>
+    <a href="journal.html">Le journal</a>
+    <a href="../">Jouer</a>
+  </nav>
+  <nav lang="en" aria-label="Devlog">
+    <a href="index.html" aria-current="page">The approach</a>
+    <a href="journal.html">The log</a>
+    <a href="../">Play</a>
+  </nav>
+
+<!-- ======================================================================= FRANÇAIS -->
+<article lang="fr">
+  <p class="kicker">DEVLOG · OCTOBRE 2026</p>
+  <h1>Rejouer 1987 en lisant le binaire</h1>
+  <p class="lede">Promptima IV est une réimplémentation complète d'<em>Ultima IV: Quest of the Avatar</em> (version DOS)
+  en TypeScript, rendue avec three.js, jouable dans un navigateur, sur mobile et en application de bureau. Le moteur
+  n'a pas été réécrit de mémoire ni d'après un wiki : il a été reconstruit en lisant l'exécutable original, fonction
+  par fonction, par un agent d'IA qui pilotait lui-même les outils de rétro-ingénierie.</p>
+
+  <div class="stats">
+    <div class="stat"><b>339</b><span>fonctions originales citées par adresse dans le code</span></div>
+    <div class="stat"><b>222</b><span>offsets de données (DS) cités</span></div>
+    <div class="stat"><b>~14 400</b><span>lignes de TypeScript dans le moteur</span></div>
+    <div class="stat"><b>0</b><span>octet du jeu original dans le dépôt</span></div>
+  </div>
+
+  <h2>Le point de départ</h2>
+  <p>Ultima IV est distribué gratuitement par GOG sous forme d'un jeu DOS : un exécutable principal,
+  <code>AVATAR.EXE</code>, compressé avec EXEPACK, un <code>TITLE.EXE</code> pour l'introduction, et une poignée de
+  fichiers de données aux formats maison (cartes <code>.ULT</code>, dialogues <code>.TLK</code>, donjons
+  <code>.DNG</code>, graphismes EGA). Aucun code source. Les règles du jeu (formules de combat, prix, IA des monstres,
+  karma, sorts) n'existent qu'en assembleur 8086, compilé par Microsoft C en 1986.</p>
+  <p>L'objectif : un portage fidèle à la règle près, mais moderne dans sa forme (écran adaptatif, tactile, français,
+  graphismes et sons nouveaux), et propre juridiquement (aucun contenu original dans le code publié).</p>
+
+  <h2>La démarche</h2>
+  <h3>1. Ouvrir le binaire</h3>
+  <p>La première étape a été de défaire EXEPACK : l'en-tête est retrouvé derrière le point d'entrée, la
+  décompression (un RLE à l'envers) est réécrite, et l'image décompressée devient la référence. Une leçon est
+  arrivée tôt : un premier désassemblage fait sur le fichier <em>encore compressé</em> donnait des offsets faux
+  au-delà du premier bloc. Tout ce qui suit s'appuie sur l'image décompressée, où <code>1000:xxxx</code> est
+  directement l'offset dans l'image et <code>DS:x</code> vaut <code>0xF0D0 + x</code>, segment de données retrouvé
+  dans le code de démarrage de la bibliothèque C.</p>
+
+  <h3>2. Lire, nommer, comprendre, avec REA</h3>
+  <p>L'exploration du binaire s'est faite à travers <strong>REA</strong>, un serveur MCP de rétro-ingénierie : un
+  ensemble d'outils (décompilation, pseudo-code, références croisées, recherche de chaînes, lecture d'octets,
+  renommage et commentaires) que l'agent appelle directement depuis la conversation. Plutôt que de copier-coller des
+  listings dans un chat, l'agent ouvre la fonction qui l'intéresse, remonte ses appelants, suit une table en mémoire,
+  donne un nom à ce qu'il a compris et passe à la suivante.</p>
+  <p>Exemple typique : pour porter la fin de combat, l'agent part de la boucle principale du combat, trouve la
+  fonction de sortie, lit ses branches (fuite face à des monstres maléfiques ou non, victoire) et en tire les
+  variations de vertus exactes, puis vérifie les routines d'incrément et de décrément du karma qu'elle appelle,
+  avec leurs plafonds et leurs cas limites.</p>
+
+  <h3>3. Porter en citant ses sources</h3>
+  <p>Chaque règle portée cite dans un commentaire l'adresse de la fonction originale et des données qu'elle lit.
+  C'est la convention centrale du projet : quiconque doute d'une formule peut rouvrir le binaire à cette adresse et
+  vérifier. Les découvertes s'accumulent dans <code>docs/RE_NOTES.md</code> : carte des données globales, table des
+  fonctions, formules en pseudo-code, questions encore ouvertes.</p>
+  <pre><code>// fin de combat : 1000:837A
+// karma_inc / karma_dec : 1000:09F8 / 1000:0A17
+// générateur aléatoire 16 octets à DS:0x8732 : 1000:1771</code></pre>
+  <p>Là où le portage interprète au lieu de copier (temporisations qui dépendaient de la vitesse du processeur,
+  rendu 3D des donjons), le code le dit explicitement.</p>
+
+  <h3>4. Extraire une fois, ne plus jamais lire l'original</h3>
+  <p>Le moteur ne lit jamais les fichiers d'origine. Un outil d'extraction les convertit <em>une fois</em>, depuis la
+  copie du joueur, en formats modernes (PNG, cartes et dialogues JSON, tables, catalogues de textes). Les textes
+  originaux ne figurent nulle part dans le code source, pas même en commentaire : le code déclare seulement
+  <em>où</em> chaque texte se trouve dans l'exécutable (un offset), et l'extracteur parcourt ce même registre.</p>
+
+  <h3>5. Vérifier par l'outil, pas par la confiance</h3>
+  <p>Le générateur aléatoire original est reproduit à l'identique et peut recevoir une graine. Cela rend possibles
+  des tests unitaires sur les décodeurs de formats (exécutés contre les vrais fichiers quand ils sont présents) et
+  surtout des <strong>scénarios headless</strong> : un Chrome sans fenêtre pilote le jeu (marcher, entrer en ville,
+  descendre dans un donjon), capture l'écran et le compare à une référence. Une régression visuelle est détectée
+  sans qu'un humain rejoue.</p>
+
+  <h2>L'intérêt agentique</h2>
+  <p>La rétro-ingénierie d'un jeu entier, c'est surtout un énorme volume de petites recherches : quelle fonction
+  écrit cet octet, qui appelle cette routine, que contient cette table, ce nombre est-il un offset ou une constante.
+  Chaque question est simple ; leur nombre est ce qui décourage. C'est exactement le terrain où un agent change la
+  donne.</p>
+
+  <figure>
+    <svg class="loop" viewBox="0 0 360 520" role="img" aria-labelledby="loop-fr-title">
+      <title id="loop-fr-title">La boucle de travail de l'agent, de la question du joueur jusqu'à la vérification</title>
+      <defs><marker id="ah-fr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="step human" x="20" y="10" width="270" height="52" rx="8"/>
+      <text x="36" y="32">Humain : « que se passe-t-il</text><text x="36" y="50">quand on fuit un combat ? »</text>
+      <rect class="step" x="20" y="92" width="270" height="52" rx="8"/>
+      <text x="36" y="114">REA : décompiler, références</text><text x="36" y="132">croisées, lire les tables</text>
+      <rect class="step" x="20" y="174" width="270" height="52" rx="8"/>
+      <text x="36" y="196">Nommer et commenter dans la base,</text><text x="36" y="214">noter dans RE_NOTES.md</text>
+      <rect class="step" x="20" y="256" width="270" height="52" rx="8"/>
+      <text x="36" y="278">Porter en TypeScript en citant</text><text x="36" y="296">1000:xxxx et DS:xxxx</text>
+      <rect class="step" x="20" y="338" width="270" height="52" rx="8"/>
+      <text x="36" y="360">Tests Vitest, scénarios headless</text><text x="36" y="378">à graine fixe</text>
+      <rect class="step human" x="20" y="420" width="270" height="52" rx="8"/>
+      <text x="36" y="442">Humain : jouer, juger, choisir</text><text x="36" y="460">la direction suivante</text>
+      <path class="arrow" d="M155,62 V90" marker-end="url(#ah-fr)"/>
+      <path class="arrow" d="M155,144 V172" marker-end="url(#ah-fr)"/>
+      <path class="arrow" d="M155,226 V254" marker-end="url(#ah-fr)"/>
+      <path class="arrow" d="M155,308 V336" marker-end="url(#ah-fr)"/>
+      <path class="arrow" d="M155,390 V418" marker-end="url(#ah-fr)"/>
+      <path class="arrow" d="M290,364 H330 V118 H294" marker-end="url(#ah-fr)"/>
+      <text class="small" x="300" y="250" transform="rotate(90 300 250)">écart → on relit</text>
+      <text class="small" x="20" y="500">En doré, les étapes humaines ; le reste est enchaîné par l'agent.</text>
+    </svg>
+    <figcaption>La boucle de travail. Un test qui échoue renvoie à la lecture du binaire, pas à une supposition.</figcaption>
+  </figure>
+
+  <h3>L'agent tient les outils, pas seulement la conversation</h3>
+  <p>Avec un assistant classique, l'humain fait l'aller-retour : il copie un listing, colle la réponse, relance
+  l'outil. Ici, l'agent appelle REA, lit le résultat, décide de la question suivante, écrit le code, lance les tests,
+  démarre le serveur, prend une capture et la regarde. La boucle question → preuve → code → vérification tourne
+  sans intermédiaire, et l'humain intervient là où son jugement compte.</p>
+
+  <h3>La traçabilité devient automatique</h3>
+  <p>Citer l'adresse de chaque règle est fastidieux pour un humain ; pour l'agent, c'est un effet de bord naturel
+  puisqu'il vient de lire la fonction. Résultat : plus de 300 fonctions et 200 offsets cités dans le code. Chaque
+  formule peut être contestée et revérifiée, ce qui est la seule façon de faire confiance à du code produit à cette
+  vitesse.</p>
+
+  <h3>La mémoire est écrite, donc partageable</h3>
+  <p>Un agent oublie entre deux sessions. La réponse a été de tout écrire : <code>docs/RE_NOTES.md</code> pour ce que
+  dit le binaire, <code>CLAUDE.md</code> pour les règles du projet (commandes, conventions, interdits), des notes de
+  mémoire pour les décisions et les pièges rencontrés. Ces documents servent autant à l'agent suivant qu'à un
+  contributeur humain : la rétro-ingénierie n'est pas enfermée dans une tête.</p>
+
+  <h3>Les garde-fous sont des règles, pas des intentions</h3>
+  <p>La contrainte la plus importante du projet est juridique : ne jamais republier le contenu original. Elle est
+  écrite noir sur blanc dans les instructions du projet (aucun texte original dans le source, pas même en
+  commentaire ; dossiers dérivés ignorés par git ; une branche locale qui ne doit jamais être poussée, protégée par un
+  hook). L'agent les applique à chaque modification, y compris dans ce devlog.</p>
+
+  <h3>L'humain garde la direction et le goût</h3>
+  <p>L'agent est rapide et méthodique ; il n'a pas de goût propre. Les choix qui comptent ont été humains : refuser
+  les tuiles générées par diffusion locale (formes perdues, animations incohérentes), écarter le simple
+  agrandissement pixel-art (fidèle, mais toujours 1987), choisir une refonte moderne en 32 px avec PixelLab, animer
+  soi-même les personnages, décider du nom, de l'écran adaptatif, du mobile. L'agent explore, propose, mesure ;
+  l'humain tranche et joue.</p>
+
+  <h3>Ce qui reste difficile</h3>
+  <ul>
+    <li>Ce qui dépendait de la vitesse du processeur en 1987 n'a pas de « bonne » valeur : c'est interprété et
+      signalé comme tel.</li>
+    <li>Le décompilateur se trompe parfois (constantes négatives qui sont en fait des offsets, segments mal
+      résolus) : il faut relire l'assembleur.</li>
+    <li>Un agent peut affirmer avec aplomb une règle mal lue. Les tests et les scénarios existent pour ça ; les notes
+      gardent une liste de questions ouvertes plutôt que de les maquiller.</li>
+  </ul>
+
+  <h2>Et maintenant</h2>
+  <p>Le jeu est complet, de la création du personnage à la fin du jeu, en anglais et en français, jouable sur
+  <a href="../">promptima.app</a>. Les sprints en cours remplacent les derniers graphismes originaux et repensent
+  l'interface sur téléphone. Le <a href="journal.html">journal</a> raconte les étapes une par une.</p>
+
+  <footer>Promptima IV est une réinterprétation non officielle d'un jeu de 1987, sans lien avec ses ayants droit ·
+  <a href="../legal/mentions-legales.html">Mentions légales</a></footer>
+</article>
+
+<!-- ======================================================================= ENGLISH -->
+<article lang="en">
+  <p class="kicker">DEVLOG · OCTOBER 2026</p>
+  <h1>Replaying 1987 by reading the binary</h1>
+  <p class="lede">Promptima IV is a complete reimplementation of <em>Ultima IV: Quest of the Avatar</em> (DOS
+  version) in TypeScript, rendered with three.js, playable in a browser, on a phone and as a desktop app. The engine
+  was not rewritten from memory or from a wiki: it was rebuilt by reading the original executable, function by
+  function, by an AI agent that drove the reverse-engineering tools itself.</p>
+
+  <div class="stats">
+    <div class="stat"><b>339</b><span>original functions cited by address in the code</span></div>
+    <div class="stat"><b>222</b><span>data (DS) offsets cited</span></div>
+    <div class="stat"><b>~14,400</b><span>lines of TypeScript in the engine</span></div>
+    <div class="stat"><b>0</b><span>bytes of the original game in the repository</span></div>
+  </div>
+
+  <h2>The starting point</h2>
+  <p>Ultima IV is given away by GOG as a DOS game: a main executable, <code>AVATAR.EXE</code>, packed with EXEPACK, a
+  <code>TITLE.EXE</code> for the introduction, and a handful of data files in custom formats (<code>.ULT</code> maps,
+  <code>.TLK</code> dialogues, <code>.DNG</code> dungeons, EGA graphics). No source code. The rules of the game
+  (combat formulas, prices, monster AI, karma, spells) exist only as 8086 assembly, compiled by Microsoft C in
+  1986.</p>
+  <p>The goal: a port faithful down to the rule, but modern in form (responsive screen, touch, French, new graphics
+  and sounds), and legally clean (no original content in the published code).</p>
+
+  <h2>The approach</h2>
+  <h3>1. Opening the binary</h3>
+  <p>The first step was undoing EXEPACK: the header is found behind the entry point, the decompression (a backwards
+  RLE) is rewritten, and the unpacked image becomes the reference. A lesson came early: a first disassembly made on
+  the <em>still packed</em> file had wrong offsets past the first block. Everything after that relies on the unpacked
+  image, where <code>1000:xxxx</code> is directly the image offset and <code>DS:x</code> is <code>0xF0D0 + x</code>, a
+  data segment found in the C library's startup code.</p>
+
+  <h3>2. Reading, naming, understanding, with REA</h3>
+  <p>The binary was explored through <strong>REA</strong>, a reverse-engineering MCP server: a set of tools
+  (decompilation, pseudo-code, cross-references, string search, byte reads, renaming and comments) that the agent
+  calls directly from the conversation. Instead of pasting listings into a chat, the agent opens the function it
+  cares about, walks up its callers, follows a table in memory, names what it has understood and moves on to the
+  next one.</p>
+  <p>A typical example: to port the end of combat, the agent starts from the combat main loop, finds the exit
+  function, reads its branches (fleeing from evil or non-evil monsters, victory) and derives the exact virtue
+  changes, then checks the karma increment and decrement routines it calls, with their caps and edge cases.</p>
+
+  <h3>3. Porting while citing sources</h3>
+  <p>Every ported rule cites, in a comment, the address of the original function and of the data it reads. That is
+  the project's central convention: anyone who doubts a formula can reopen the binary at that address and check.
+  Findings pile up in <code>docs/RE_NOTES.md</code>: global data map, function table, formulas in pseudo-code,
+  questions still open.</p>
+  <pre><code>// end of combat: 1000:837A
+// karma_inc / karma_dec: 1000:09F8 / 1000:0A17
+// 16-byte random generator at DS:0x8732: 1000:1771</code></pre>
+  <p>Where the port interprets instead of copying (timings that depended on CPU speed, the 3D look of the dungeons),
+  the code says so explicitly.</p>
+
+  <h3>4. Extract once, never read the original again</h3>
+  <p>The engine never reads the original files. An extraction tool converts them <em>once</em>, from the player's
+  own copy, into modern formats (PNG, JSON maps and dialogues, tables, text catalogs). Original texts appear nowhere
+  in the source code, not even in comments: the code only declares <em>where</em> each text lives in the executable
+  (an offset), and the extractor walks that same registry.</p>
+
+  <h3>5. Verify with tools, not trust</h3>
+  <p>The original random generator is reproduced exactly and can be seeded. That makes possible unit tests on the
+  format decoders (run against the real files when they are present) and above all <strong>headless
+  scenarios</strong>: a windowless Chrome drives the game (walk, enter a town, go down a dungeon), captures the screen
+  and compares it with a reference. A visual regression is caught without a human replaying.</p>
+
+  <h2>Why the agentic part matters</h2>
+  <p>Reverse engineering a whole game is mostly a huge volume of small lookups: which function writes this byte, who
+  calls this routine, what is in this table, is this number an offset or a constant. Each question is simple; their
+  number is what wears people down. That is exactly where an agent changes the game.</p>
+
+  <figure>
+    <svg class="loop" viewBox="0 0 360 520" role="img" aria-labelledby="loop-en-title">
+      <title id="loop-en-title">The agent's working loop, from the human's question to verification</title>
+      <defs><marker id="ah-en" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <rect class="step human" x="20" y="10" width="270" height="52" rx="8"/>
+      <text x="36" y="32">Human: "what happens when</text><text x="36" y="50">the party flees a fight?"</text>
+      <rect class="step" x="20" y="92" width="270" height="52" rx="8"/>
+      <text x="36" y="114">REA: decompile, cross-reference,</text><text x="36" y="132">read the tables</text>
+      <rect class="step" x="20" y="174" width="270" height="52" rx="8"/>
+      <text x="36" y="196">Name and comment in the database,</text><text x="36" y="214">write it down in RE_NOTES.md</text>
+      <rect class="step" x="20" y="256" width="270" height="52" rx="8"/>
+      <text x="36" y="278">Port to TypeScript, citing</text><text x="36" y="296">1000:xxxx and DS:xxxx</text>
+      <rect class="step" x="20" y="338" width="270" height="52" rx="8"/>
+      <text x="36" y="360">Vitest tests, seeded headless</text><text x="36" y="378">scenarios</text>
+      <rect class="step human" x="20" y="420" width="270" height="52" rx="8"/>
+      <text x="36" y="442">Human: play, judge, pick</text><text x="36" y="460">the next direction</text>
+      <path class="arrow" d="M155,62 V90" marker-end="url(#ah-en)"/>
+      <path class="arrow" d="M155,144 V172" marker-end="url(#ah-en)"/>
+      <path class="arrow" d="M155,226 V254" marker-end="url(#ah-en)"/>
+      <path class="arrow" d="M155,308 V336" marker-end="url(#ah-en)"/>
+      <path class="arrow" d="M155,390 V418" marker-end="url(#ah-en)"/>
+      <path class="arrow" d="M290,364 H330 V118 H294" marker-end="url(#ah-en)"/>
+      <text class="small" x="300" y="250" transform="rotate(90 300 250)">mismatch → read again</text>
+      <text class="small" x="20" y="500">Gold: human steps; the rest is chained by the agent.</text>
+    </svg>
+    <figcaption>The working loop. A failing test sends the agent back to the binary, not to a guess.</figcaption>
+  </figure>
+
+  <h3>The agent holds the tools, not just the conversation</h3>
+  <p>With a classic assistant, the human does the round trips: copy a listing, paste the answer, rerun the tool.
+  Here, the agent calls REA, reads the result, decides the next question, writes the code, runs the tests, starts the
+  server, takes a screenshot and looks at it. The question → evidence → code → verification loop runs with no
+  middleman, and the human steps in where judgement matters.</p>
+
+  <h3>Traceability comes for free</h3>
+  <p>Citing the address of every rule is tedious for a human; for the agent it is a natural side effect, since it
+  has just read the function. The result: over 300 functions and 200 offsets cited in the code. Every formula can be
+  challenged and checked again, which is the only way to trust code produced at this pace.</p>
+
+  <h3>Memory is written down, so it can be shared</h3>
+  <p>An agent forgets between sessions. The answer was to write everything down: <code>docs/RE_NOTES.md</code> for
+  what the binary says, <code>CLAUDE.md</code> for the project rules (commands, conventions, prohibitions), memory
+  notes for decisions and pitfalls met along the way. These documents serve the next agent as much as a human
+  contributor: the reverse engineering is not locked in anyone's head.</p>
+
+  <h3>Guardrails are rules, not intentions</h3>
+  <p>The project's most important constraint is legal: never republish the original content. It is written down in
+  the project instructions (no original text in the source, not even in comments; derived folders ignored by git; a
+  local branch that must never be pushed, guarded by a hook). The agent applies them on every change, this devlog
+  included.</p>
+
+  <h3>The human keeps direction and taste</h3>
+  <p>The agent is fast and methodical; it has no taste of its own. The choices that mattered were human: rejecting
+  tiles generated by local diffusion (shapes lost, inconsistent animations), setting aside plain pixel-art upscaling
+  (faithful, but still 1987), choosing a modern 32 px redesign with PixelLab, animating the characters by hand,
+  deciding the name, the responsive screen, the phone layout. The agent explores, proposes and measures; the human
+  decides and plays.</p>
+
+  <h3>What is still hard</h3>
+  <ul>
+    <li>What depended on CPU speed in 1987 has no "right" value: it is interpreted and flagged as such.</li>
+    <li>The decompiler is sometimes wrong (negative constants that are really offsets, badly resolved segments): the
+      assembly has to be read.</li>
+    <li>An agent can state a misread rule with confidence. Tests and scenarios exist for that; the notes keep a list
+      of open questions instead of papering over them.</li>
+  </ul>
+
+  <h2>What now</h2>
+  <p>The game is complete, from character creation to the endgame, in English and French, playable on
+  <a href="../">promptima.app</a>. The current sprints replace the last original graphics and rethink the phone
+  interface. The <a href="journal.html">log</a> tells the steps one by one.</p>
+
+  <footer>Promptima IV is an unofficial reinterpretation of a 1987 game, not affiliated with its rights holders ·
+  <a href="../legal/mentions-legales.html">Legal notice</a></footer>
+</article>
+</main>
+<script src="../legal/legal.js"></script>
+</body>
+</html>

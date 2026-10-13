@@ -22,13 +22,14 @@ export interface ModernTitle {
 }
 
 
-/** Links to the legal pages (public/legal/, in French), opened in a new tab so that the game stays. */
+/** Links to the legal pages (public/legal/, in French) and the devlog (public/devlog/), opened in a new tab so that the game stays. */
 export function legalLinks(cls: string) {
   const base = import.meta.env.BASE_URL;
   // the pages show the interface language (they hold English and French)
-  const link = (key: string, file: string) => h("a", { href: `${base}legal/${file}?lang=${config().lang.ui}`, target: "_blank", rel: "noopener" }, t(key));
+  const link = (key: string, file: string) => h("a", { href: `${base}${file}?lang=${config().lang.ui}`, target: "_blank", rel: "noopener" }, t(key));
   return h("nav", { class: cls, "aria-label": t("legal.nav") },
-    link("legal.notice", "mentions-legales.html"), link("legal.terms", "cgu.html"), link("legal.contact", "contact.html"),
+    link("legal.notice", "legal/mentions-legales.html"), link("legal.terms", "legal/cgu.html"), link("legal.contact", "legal/contact.html"),
+    link("legal.devlog", "devlog/index.html"),
     ...SUPPORT.map(([key, href]) => h("a", { class: "support", href, target: "_blank", rel: "noopener" }, t(key))));
 }
 
