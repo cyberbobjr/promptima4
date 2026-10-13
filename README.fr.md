@@ -1,4 +1,4 @@
-# Ultima IV — TypeScript + three.js + Tauri
+# Promptima IV — Ultima IV en TypeScript + three.js + Tauri
 
 *[English version](README.md)*
 
@@ -53,7 +53,7 @@ Node.js est fourni dans `.nodeenv` ; Rust (chaîne MSVC) est nécessaire pour Ta
 PowerShell :
 
 ```powershell
-$env:Path = "E:\IdeaProjects\u4\.nodeenv\Scripts;" + $env:Path
+$env:Path = "$PWD\.nodeenv\Scripts;" + $env:Path
 npm install
 npm run tauri dev   # application de bureau, rechargement à chaud du front
 npm run dev         # navigateur seul : http://127.0.0.1:1420
@@ -63,7 +63,7 @@ node tools/scenarios.mjs [--ref]  # non-régression par captures headless (serve
 npx tsx tools/packs/upscale.ts --algo scale2x  # un pack de plus dérivé des tuiles extraites (assets/packs/scale2x-derived)
 ```
 
-Git Bash : `export PATH="/e/IdeaProjects/u4/.nodeenv/Scripts:$PATH"`, puis les mêmes commandes.
+Git Bash : `export PATH="$PWD/.nodeenv/Scripts:$PATH"`, puis les mêmes commandes.
 
 En mode dev, `http://127.0.0.1:1420/?skipintro` démarre directement sur la carte du monde (utilisé
 par les tests automatisés) ; l'instance du jeu est exposée dans `window.__game`.
@@ -132,7 +132,7 @@ Certains détails sont des interprétations plutôt que des portages exacts (tem
 dépendaient de la vitesse du CPU dans l'original, rendu 3D des donjons) ; ils sont signalés dans le
 code.
 
-Ajouté dans ce portage : anglais et français (les textes du jeu original sont traduits localement à partir
+Ajouté dans ce portage : anglais et français (les textes du jeu original sont traduits à partir
 des fichiers extraits, voir `docs/TRANSLATING.md`), packs de tuiles interchangeables (des packs HD peuvent être
 générés avec `tools/packs`), interface HTML (barre de commandes, inventaire, carte du monde, aide, options,
 débogage), jeu à la souris et au doigt (déplacement par appui, menus contextuels, glissements) et application
@@ -141,3 +141,11 @@ web installable. La couche de conversation est prête pour un fournisseur LLM (`
 Hole up et la sauvegarde dans les donjons (DNGMAP.SAV) sont faits, et les sorts et objets jamais joués (Blink, Gate,
 Winds, Dispell, Energy, Open, canons, New Order, télescope, autels, Abysse, Codex) ont été testés en jeu et comparés
 aux routines d’origine ; le panneau de débogage (F12) prépare chacun d’eux.
+
+## Licence
+
+Le code source est sous [licence MIT](LICENSE). Le contenu extrait d'Ultima IV (cartes, dialogues,
+textes) et ses traductions appartiennent à leurs ayants droit ; les illustrations, sons et musiques de
+l'édition sont © 2026 Ben Marchand (voir `LICENSE`). Ultima est une marque d'Electronic Arts ; ce projet
+n'est ni affilié ni approuvé par elle. L'historique antérieur du projet est archivé dans
+[ultima4-ts](https://github.com/cyberbobjr/ultima4-ts).

@@ -1,4 +1,4 @@
-# Ultima IV — TypeScript + three.js + Tauri
+# Promptima IV — Ultima IV in TypeScript + three.js + Tauri
 
 *[Version française](README.fr.md)*
 
@@ -50,7 +50,7 @@ A Node.js runtime is provided in `.nodeenv`; Rust (MSVC toolchain) is required f
 PowerShell:
 
 ```powershell
-$env:Path = "E:\IdeaProjects\u4\.nodeenv\Scripts;" + $env:Path
+$env:Path = "$PWD\.nodeenv\Scripts;" + $env:Path
 npm install
 npm run tauri dev   # desktop app, front-end hot reload
 npm run dev         # browser only: http://127.0.0.1:1420
@@ -60,7 +60,7 @@ node tools/scenarios.mjs [--ref]  # headless screenshot regression (dev server r
 npx tsx tools/packs/upscale.ts --algo scale2x  # one more pack derived from the extracted tiles (assets/packs/scale2x-derived)
 ```
 
-Git Bash: `export PATH="/e/IdeaProjects/u4/.nodeenv/Scripts:$PATH"`, then the same commands.
+Git Bash: `export PATH="$PWD/.nodeenv/Scripts:$PATH"`, then the same commands.
 
 In dev mode, `http://127.0.0.1:1420/?skipintro` starts directly on the overworld (used by the
 automated tests); the game instance is exposed as `window.__game`.
@@ -124,8 +124,8 @@ mixing, items, shrines and meditation, and the endgame (Abyss, Codex).
 Some details are interpretations rather than exact ports (timings that depended on CPU speed in the
 original, the 3D look of the dungeons); they are marked in the source.
 
-Added in this port: English and French (texts of the original game translated locally from the
-extracted files, see `docs/TRANSLATING.md`), interchangeable tile packs (HD packs can be generated with
+Added in this port: English and French (texts of the original game translated from the extracted
+files, see `docs/TRANSLATING.md`), interchangeable tile packs (HD packs can be generated with
 `tools/packs`), HTML interface (command bar, inventory, world map, help, options, debug panel), mouse and
 touch play (tap to walk, context menus, swipes) and an installable web app. The conversation layer is
 ready for an LLM provider (`src/game/conversation`), not enabled yet.
@@ -133,3 +133,11 @@ ready for an LLM provider (`src/game/conversation`), not enabled yet.
 Hole up and saving inside dungeons (DNGMAP.SAV) are implemented, and the spells and items that had never been
 played (Blink, Gate, Winds, Dispell, Energy, Open, cannons, New Order, telescope, altars, Abyss, Codex) were
 play-tested against the original routines; the debug panel (F12) prepares each of them.
+
+## License
+
+The source code is under the [MIT license](LICENSE). The content extracted from Ultima IV (maps,
+dialogues, texts) and its translations belong to their rights holders; the edition's artwork, sounds
+and music are © 2026 Ben Marchand (see `LICENSE`). Ultima is a trademark of Electronic Arts; this
+project is not affiliated with or endorsed by them. The earlier history of the project is archived in
+[ultima4-ts](https://github.com/cyberbobjr/ultima4-ts).

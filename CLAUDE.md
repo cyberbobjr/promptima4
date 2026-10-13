@@ -11,8 +11,8 @@ keys and touch controls; `docs/RE_NOTES.md` is the reverse-engineering reference
 
 Node is bundled in `.nodeenv` and is not on PATH:
 
-- PowerShell: `$env:Path = "E:\IdeaProjects\u4\.nodeenv\Scripts;" + $env:Path`
-- Git Bash: `export PATH="/e/IdeaProjects/u4/.nodeenv/Scripts:$PATH"`
+- PowerShell: `$env:Path = "$PWD\.nodeenv\Scripts;" + $env:Path  # from the project root`
+- Git Bash: `export PATH="$PWD/.nodeenv/Scripts:$PATH"`
 
 ```
 npm run extract -- --game-dir "C:\Program Files\GOG Galaxy\Games\Ultima 4"   # optional: original graphics + derived packs (git-ignored)
