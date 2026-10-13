@@ -2,6 +2,10 @@
 
 *[English version](README.md)*
 
+**Jouer dans le navigateur : [promptima.app](https://promptima.app)** · [Devlog](https://promptima.app/devlog/)
+
+<p align="center"><img src="docs/screenshots/title.png" alt="L'écran titre" width="860"></p>
+
 Réimplémentation d'**Ultima IV: Quest of the Avatar** (version DOS vendue par GOG) en TypeScript,
 avec un rendu three.js et une application de bureau Tauri v2.
 
@@ -9,6 +13,18 @@ Le moteur a été reconstruit par rétro-ingénierie du jeu original : décodage
 et décompilation avec Ghidra des exécutables (`AVATAR.EXE`, après suppression de sa compression
 EXEPACK, et `TITLE.EXE`). Les règles, formules et tables citent en commentaire les adresses des
 fonctions originales (`1000:xxxx`) et des données (`DS:xxxx`). Voir `docs/RE_NOTES.md`.
+
+## Captures
+
+<table>
+<tr><td width="50%"><img src="docs/screenshots/world.png" alt="Le monde"><br><sub>Le monde</sub></td><td width="50%"><img src="docs/screenshots/castle.png" alt="Le château de Lord British"><br><sub>Le château de Lord British</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/combat.png" alt="Un combat"><br><sub>Un combat</sub></td><td width="50%"><img src="docs/screenshots/dungeon.png" alt="Un donjon en 3D"><br><sub>Un donjon en 3D</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/world-map.png" alt="La carte du monde (F3)"><br><sub>La carte du monde (F3)</sub></td><td width="50%"><img src="docs/screenshots/creation.png" alt="La création du personnage"><br><sub>La création du personnage</sub></td></tr>
+</table>
+
+<p align="center"><img src="docs/screenshots/tablet.png" alt="L'écran adaptatif sur tablette (portrait), avec la barre de commandes tactile" width="420"><br><sub>L'écran adaptatif sur tablette (portrait), avec la barre de commandes tactile</sub></p>
+
+Toutes les captures montrent l'édition 2026 telle que fournie dans ce dépôt (aucun graphisme original).
 
 ## Données du jeu et graphismes originaux
 

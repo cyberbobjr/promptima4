@@ -2,6 +2,10 @@
 
 *[Version française](README.fr.md)*
 
+**Play it in your browser: [promptima.app](https://promptima.app)** · [Devlog](https://promptima.app/devlog/)
+
+<p align="center"><img src="docs/screenshots/title.png" alt="The title screen" width="860"></p>
+
 A reimplementation of **Ultima IV: Quest of the Avatar** (DOS version, as sold by GOG) written in
 TypeScript, rendered with three.js and packaged as a desktop app with Tauri v2.
 
@@ -9,6 +13,18 @@ The engine was rebuilt by reverse engineering the original game: the data file f
 and the executables (`AVATAR.EXE`, after removing its EXEPACK compression, and `TITLE.EXE`) were
 decompiled with Ghidra. Game rules, formulas and tables cite the original function addresses
 (`1000:xxxx`) and data offsets (`DS:xxxx`) in comments. See `docs/RE_NOTES.md`.
+
+## Screenshots
+
+<table>
+<tr><td width="50%"><img src="docs/screenshots/world.png" alt="The overworld"><br><sub>The overworld</sub></td><td width="50%"><img src="docs/screenshots/castle.png" alt="Lord British's castle"><br><sub>Lord British's castle</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/combat.png" alt="Combat"><br><sub>Combat</sub></td><td width="50%"><img src="docs/screenshots/dungeon.png" alt="A 3D dungeon"><br><sub>A 3D dungeon</sub></td></tr>
+<tr><td width="50%"><img src="docs/screenshots/world-map.png" alt="The world map (F3)"><br><sub>The world map (F3)</sub></td><td width="50%"><img src="docs/screenshots/creation.png" alt="Character creation"><br><sub>Character creation</sub></td></tr>
+</table>
+
+<p align="center"><img src="docs/screenshots/tablet.png" alt="The responsive screen on a tablet (portrait), with the touch command bar" width="420"><br><sub>The responsive screen on a tablet (portrait), with the touch command bar</sub></p>
+
+All screenshots show the 2026 edition as shipped in this repository (no original graphics).
 
 ## Game data and the original graphics
 
