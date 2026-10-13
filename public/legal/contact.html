@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact · Promptima IV</title>
+  <meta name="title-en" content="Contact · Promptima IV">
+  <meta name="title-fr" content="Contact · Promptima IV">
+  <link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="brand" href="../">Prompt<span>ima</span> IV</a>
+    <span class="langs"><button type="button" data-lang="fr">FR</button><button type="button" data-lang="en">EN</button></span>
+  </div>
+  <nav lang="fr" aria-label="Pages légales">
+    <a href="mentions-legales.html">Mentions légales</a>
+    <a href="cgu.html">Conditions d'utilisation</a>
+    <a href="contact.html" aria-current="page">Contact</a>
+    <a href="../">Retour au jeu</a>
+  </nav>
+  <nav lang="en" aria-label="Legal pages">
+    <a href="mentions-legales.html">Legal notice</a>
+    <a href="cgu.html">Terms of use</a>
+    <a href="contact.html" aria-current="page">Contact</a>
+    <a href="../">Back to the game</a>
+  </nav>
+<article lang="fr">
+<h1>Contact</h1>
+  <p>Une question, un bug, une idée, une demande concernant vos données ou une demande de retrait d'un contenu ? Écrivez à
+  l'éditeur du site par e-mail.</p>
+  <div class="card"><div class="mail"><span class="addr">ben.marchand [arobase] free.fr</span><button type="button" class="copy" hidden>Copier</button></div></div>
+  <p>Pour un bug, précisez si possible votre navigateur, votre appareil et ce que vous faisiez dans le jeu. Pour une demande
+  de retrait, indiquez l'élément concerné et votre qualité de titulaire des droits.</p>
+  <footer>Promptima IV · <a href="mentions-legales.html">Mentions légales</a> · <a href="cgu.html">Conditions d'utilisation</a></footer>
+</article>
+<article lang="en">
+<h1>Contact</h1>
+  <p>A question, a bug, an idea, a request about your data or a takedown request? Write to the publisher by email.</p>
+  <div class="card"><div class="mail"><span class="addr">ben.marchand [at] free.fr</span><button type="button" class="copy" hidden>Copy</button></div></div>
+  <p>For a bug, please mention your browser, your device and what you were doing in the game. For a takedown request,
+  state the element concerned and your capacity as rights holder.</p>
+  <footer>Promptima IV · <a href="mentions-legales.html">Legal notice</a> · <a href="cgu.html">Terms of use</a></footer>
+</article>
+</main>
+<script src="legal.js"></script>
+<script>
+  // the address is assembled here so that it is not in the page source as is (spam robots)
+  const address = ["ben.marchand", "free.fr"].join("@");
+  for (const card of document.querySelectorAll(".mail")) {
+    const span = card.querySelector(".addr"), copy = card.querySelector(".copy"), done = card.closest("[lang]").lang === "fr" ? "Copié" : "Copied";
+    const link = document.createElement("a");
+    link.href = "mailto:" + address;
+    link.textContent = address;
+    span.replaceChildren(link);
+    copy.hidden = false;
+    copy.addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(address); copy.textContent = done; }
+      catch { getSelection().selectAllChildren(span); }
+    });
+  }
+</script>
+</body>
+</html>

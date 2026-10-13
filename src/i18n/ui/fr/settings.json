@@ -43,5 +43,6 @@
   "settings.llmProvider": "Fournisseur",
   "settings.llmModel": "Modèle",
   "settings.llmKey": "Clé d'API",
-  "settings.llmKeyHint": "Enregistrée en clair sur cet appareil."
+  "settings.llmKeyHint": "Enregistrée en clair sur cet appareil.",
+  "settings.about": "À propos"
 }

@@ -15,3 +15,6 @@
 @media (max-width: 520px) {
   .set-row { grid-template-columns: 1fr; }
 }
+
+.set-legal { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 10px; }
+.set-legal a { color: var(--ui-accent); }

@@ -33,6 +33,15 @@ function loadFonts() {
   return fontsLoaded;
 }
 
+/** Links to the legal pages (public/legal/, in French), opened in a new tab so that the game stays. */
+export function legalLinks(cls: string) {
+  const base = import.meta.env.BASE_URL;
+  // the pages show the interface language (they hold English and French)
+  const link = (key: string, file: string) => h("a", { href: `${base}legal/${file}?lang=${config().lang.ui}`, target: "_blank", rel: "noopener" }, t(key));
+  return h("nav", { class: cls, "aria-label": t("legal.nav") },
+    link("legal.notice", "mentions-legales.html"), link("legal.terms", "cgu.html"), link("legal.contact", "contact.html"));
+}
+
 type Item = "replay" | "resume" | "new";
 const ITEMS: Item[] = ["replay", "resume", "new"];
 /** Letters: the original's (R, J, I) and the initials of the new labels. */
@@ -78,7 +87,8 @@ export function createModernTitle(overlay: HTMLElement, g: Game): ModernTitle {
           h("div", { class: "pt-tagline" }, t("title.tagline")),
           h("div", { class: "pt-menu" }, h("div", { class: "pt-head" }, t("title.options"), h("span", { class: "pt-spiral" }, "@")), ...buttons),
           h("div", { class: "pt-notice", hidden: true }),
-          h("div", { class: "pt-foot" }, t("title.credits"), h("small", {}, t("title.creditsSmall"))))));
+          h("div", { class: "pt-foot" }, t("title.credits"), h("small", {}, t("title.creditsSmall")))),
+        legalLinks("pt-legal")));
     // music on/off, saved in the settings (remembered after a reload)
     const music = h("button", {
       type: "button", class: "pt-music",

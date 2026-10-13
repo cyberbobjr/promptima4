@@ -1,0 +1,40 @@
+/* Legal pages of promptima.app (mentions légales, CGU, contact): the game's night palette, readable text. */
+@font-face { font-family: "Pirata One"; src: url("../fonts/PirataOne-Regular.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Press Start 2P"; src: url("../fonts/PressStart2P-Regular.ttf") format("truetype"); font-display: swap; }
+:root {
+  --night: #070814;
+  --panel: #0d0f22;
+  --frame: #a6a8ff;
+  --ink: #e9ebff;
+  --muted: #a3a8cf;
+  --accent: #55ffff;
+  --gold: #ffd36a;
+  color-scheme: dark;
+}
+html { background: var(--night); }
+body {
+  margin: 0; padding-inline: 16px; padding-block: 32px 56px; background: radial-gradient(120% 60% at 50% 0%, #0d1030 0%, var(--night) 70%) fixed;
+  color: var(--ink); font: 17px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 68ch; margin-inline: auto; }
+.brand { display: inline-block; margin-bottom: 18px; font: 400 30px/1 "Pirata One", serif; color: #bff6ff; text-decoration: none; }
+.brand span { color: var(--gold); }
+nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 26px; font: 400 10px/1.6 "Press Start 2P", monospace; }
+nav a { color: var(--muted); text-decoration: none; }
+nav a[aria-current="page"], nav a:hover, nav a:focus-visible { color: var(--accent); }
+h1 { margin: 0 0 8px; font: 400 clamp(28px, 5vw, 40px)/1.1 "Pirata One", serif; color: var(--ink); text-wrap: balance; }
+.updated { margin: 0 0 28px; color: var(--muted); font-size: 14px; }
+h2 { margin: 34px 0 8px; font: 400 12px/1.6 "Press Start 2P", monospace; color: var(--accent); }
+p, ul { margin: 0 0 14px; }
+ul { padding-left: 22px; }
+a { color: var(--accent); }
+.card { background: var(--panel); border: 3px solid var(--frame); border-radius: 10px; padding: 18px 20px; margin: 18px 0; }
+.mail { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font: 400 14px/1.4 "Press Start 2P", monospace; color: var(--gold); word-break: break-all; }
+button { font: 400 10px/1 "Press Start 2P", monospace; color: var(--ink); background: #14142a; border: 1px solid #5555ff; border-radius: 4px; padding: 10px 12px; cursor: pointer; }
+button:hover, button:focus-visible { border-color: var(--accent); outline: none; }
+footer { margin-top: 40px; color: var(--muted); font-size: 14px; }
+.langs { display: inline-flex; gap: 6px; margin-left: auto; }
+.langs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 18px; }
+.top .brand { margin-bottom: 0; }
+[hidden] { display: none !important; }

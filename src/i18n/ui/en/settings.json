@@ -43,5 +43,6 @@
   "settings.llmProvider": "Provider",
   "settings.llmModel": "Model",
   "settings.llmKey": "API key",
-  "settings.llmKeyHint": "Stored in clear text on this device."
+  "settings.llmKeyHint": "Stored in clear text on this device.",
+  "settings.about": "About"
 }

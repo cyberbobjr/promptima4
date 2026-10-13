@@ -8,6 +8,7 @@ import { LANGS, t } from "../../i18n/i18n";
 import { h } from "../dom/dom";
 import type { Panel } from "../dom/panels";
 import "./settings.css";
+import { legalLinks } from "../dom/title";
 
 /** Packs the store may hold (it cannot list folders); any other name can be typed. */
 const KNOWN_PACKS = ["original", "pixellab", "scale4x-derived", "scale3x-derived", "scale2x-derived"];
@@ -97,6 +98,7 @@ export function createSettingsPanel(g: Game): Panel {
             value: String(Math.round(c.music.volume * 100)), disabled: !c.music.enabled,
             onchange: (e) => save({ music: { volume: Number((e.target as HTMLInputElement).value) / 100 } }),
           }))),
+        section(t("settings.about"), legalLinks("set-legal")),
         section(t("settings.debug"),
           row("set-debug", t("settings.debugMode"), check("set-debug", c.debug.enabled, (v) => save({ debug: { enabled: v } })), t("settings.debugHint"))),
         section(t("settings.llm"),
