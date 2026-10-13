@@ -2,7 +2,7 @@
   "_note": "Chosen candidates (index in sprite-<name>/ and terrain-1/; \"<seed>/<index>\" for sprite-<name>-<seed>/). Towns: no moat (no town on the world map is surrounded by water). Tiles: \"<set>-<seed>/<index>\" in tiles-<set>-<seed>/.",
   "coast": "standard (sand beach), user choice",
   "sprites": {
-    "town": 0, "castle": 1, "lbcastle": 10, "shrine": 0, "dungeon": 0, "ship": 0, "pirate": 1, "horse": 0, "balloon": 1,
+    "town": 0, "castle": 1, "lbcastle": "2/2", "shrine": 0, "dungeon": 0, "ship": 0, "pirate": 1, "horse": 0, "balloon": 1,
     "ship-n": 16, "ship-s": 0, "pirate-n": 24, "pirate-s": 3, "village": 3, "ruins": 5, "bridge": 0, "moongate": 0,
     "ankh": 0, "campfire": 14, "chest": 0, "corpse": "2/0", "rocks": 1, "column": 0, "altar": 9, "ladder-up": "2/0", "ladder-down": 1,
     "mast": 2, "wheel": 1 },

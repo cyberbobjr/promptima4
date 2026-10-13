@@ -127,7 +127,9 @@ export const SPRITES = {
   shrine: "small circle of white standing stones with a glowing ankh in the middle, seen from above",
   dungeon: "dark cave entrance in a grey rock mound with a wooden frame, seen from above",
   // Lord British's castle (0x0E, between its wings 0x0D/0x0F): wider than a cell, drawn over the wings
-  lbcastle: { desc: "grand royal castle seen from above, wide white stone keep with a tall central tower and two side wings with round towers, blue roofs, golden banners, large gate, stone ramparts", size: [80, 56] },
+  // three cells wide (96 px): the wings are walls in the game, the castle must cover them entirely (80 px left
+  // grass at both ends); 4 candidates per call at this size
+  lbcastle: { desc: "grand royal castle seen from above, very wide, its stone ramparts and two side wings with round corner towers span the full width of the image from the left edge to the right edge, tall central keep with a blue roof and golden banners, large gate in the middle", size: [96, 64] },
   // transports (0x10-0x13 ship, 0x80-0x83 pirate ship, 0x14/0x15 horse, 0x18 balloon); W is drawn, E mirrored
   ship: { desc: "wooden sailing ship with white square sails and a small red pennant, side view, the bow points to the left, sailing to the left, no water", ground: "sea", suffix: OBJ },
   "ship-n": { desc: "the same wooden sailing ship seen from behind, sailing away from the viewer, stern in front, white square sails seen from the back, no water", ground: "sea", suffix: OBJ, ref: "ship" },

@@ -152,15 +152,22 @@ export class LayeredView {
         fallback = true;
       }
 
-    // 4. sprites, row by row (lower ones over upper ones)
+    // 4. sprites, row by row (lower ones over upper ones); a figure standing on a place (the party on Lord
+    // British's gate, a town...) hides that map tile in `tiles`: the place's sprite is drawn under it first
+    const put = (k: number, vx: number, vy: number) => {
+      const s = def.sprites[k];
+      const f = s.frames > 1 ? (((frame + x0 + vx) % s.frames) + s.frames) % s.frames : 0;
+      ctx.drawImage(pack.sprites[k], f * s.w, 0, s.w, s.h,
+        vx * S + ((S - s.w) >> 1), (vy + 1) * S + (s.dy ?? 0) - s.h, s.w, s.h);
+    };
     for (let vy = 0; vy < N; vy++)
       for (let vx = 0; vx < N; vx++) {
-        const k = this.sprite.get(tiles[vy * N + vx]);
-        if (k === undefined) continue;
-        const s = def.sprites[k];
-        const f = s.frames > 1 ? (((frame + x0 + vx) % s.frames) + s.frames) % s.frames : 0;
-        ctx.drawImage(pack.sprites[k], f * s.w, 0, s.w, s.h,
-          vx * S + ((S - s.w) >> 1), (vy + 1) * S + (s.dy ?? 0) - s.h, s.w, s.h);
+        const t = tiles[vy * N + vx];
+        if (t < 0) continue;
+        const g = ground[(vy + 1) * G + vx + 1], under = g !== t ? this.sprite.get(g) : undefined;
+        if (under !== undefined) put(under, vx, vy);
+        const k = this.sprite.get(t);
+        if (k !== undefined) put(k, vx, vy);
       }
     return fallback;
   }

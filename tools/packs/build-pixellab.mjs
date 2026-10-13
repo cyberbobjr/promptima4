@@ -54,6 +54,30 @@ function tint(img, file, k) {
   return img;
 }
 
+/**
+ * Places made symmetric: the left half up to the axis (x of the gate's centre in the picked image, in pixels)
+ * mirrored onto the right, the axis moved to the centre of the image. Lord British's castle came 4 px off
+ * centre, its right wing shorter than the left one.
+ */
+const MIRROR = { lbcastle: 43.5 };
+function mirrorLeft(img, axis) {
+  const W = img.width, out = new PNG({ width: W, height: img.height }), shift = Math.round(axis + 0.5 - W / 2);
+  for (let y = 0; y < img.height; y++)
+    for (let x = 0; x < W; x++) {
+      // left of the centre: the source shifted to put the axis in the middle; right: its mirror image
+      const sx = x < W / 2 ? x + shift : W - 1 - x + shift;
+      if (sx < 0 || sx >= W) continue;
+      img.data.copy(out.data, (y * W + x) * 4, (y * W + sx) * 4, (y * W + sx) * 4 + 4);
+    }
+  return out;
+}
+
+/** File of a picked place: an index in sprite-<name>/, or "<seed>/<index>" in sprite-<name>-<seed>/. */
+const pickedPlace = (name) => {
+  const p = String(picks.sprites[name]), [seed, i] = p.includes("/") ? p.split("/") : ["", p];
+  return path.join(SRC, `sprite-${name}${seed ? `-${seed}` : ""}`, `${i}.png`);
+};
+
 /** Sprite name -> SHAPES ids (docs/TILEPACK-LAYERED.md, last table). */
 // lbcastle: Lord British's castle, centred on 0x0E and wide enough to cover its wings 0x0D/0x0F (grass)
 const IDS = { dungeon: [9], town: [10], castle: [11], lbcastle: [14], shrine: [30], avatar: [0x1f] };
@@ -116,7 +140,7 @@ const lowest = (frames) => {
 const sprites = [], missing = [];
 for (const [name, ids] of Object.entries(IDS)) {
   let frames, dy = 0;
-  if (PLACES.includes(name)) frames = [read(path.join(SRC, `sprite-${name}`, `${picks.sprites[name]}.png`))];
+  if (PLACES.includes(name)) frames = [MIRROR[name] !== undefined ? mirrorLeft(read(pickedPlace(name)), MIRROR[name]) : read(pickedPlace(name))];
   else {
     const anim = path.join(SRC, "anim", name), still = path.join(SRC, `character-${name}-south.png`);
     const files = fs.existsSync(anim) ? fs.readdirSync(anim).filter((f) => /^\d+\.png$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b)) : [];
