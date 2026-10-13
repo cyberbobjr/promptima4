@@ -1,19 +1,16 @@
-// Checks the extracted assets against the engine: every declared text exists, and (during the
-// migration) the tables fed by the catalog equal the snapshot taken before texts left the source.
+// Checks the extracted assets against the engine: every declared text exists in the committed catalog,
+// and after a local extraction (manifest.json, git-ignored) every file it lists is there.
 import fs from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { setGameText, textSpecs } from "../src/data/text";
 import "../src/data/all-texts";
-import * as tables from "../src/data/tables";
-import * as strings from "../src/game/town/strings";
-import * as dungeon from "../src/dungeon/tables";
 import { unpackExepack } from "../tools/exe/exepack";
 import { hasGame, readGame } from "./gamedir";
 
 const ASSETS = path.resolve("assets/original");
-const SNAPSHOT = path.resolve("test-output/tables-snapshot.json");
-const hasAssets = fs.existsSync(path.join(ASSETS, "manifest.json"));
+const hasAssets = fs.existsSync(path.join(ASSETS, "i18n/en/game.json"));
+const hasManifest = fs.existsSync(path.join(ASSETS, "manifest.json"));
 const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(ASSETS, rel), "utf8"));
 
 describe.skipIf(!hasGame)("EXEPACK", () => {
@@ -33,16 +30,8 @@ describe.skipIf(!hasAssets)("extracted assets", () => {
     expect(missing).toEqual([]);
   });
 
-  it("lists every written file in the manifest", () => {
+  it.skipIf(!hasManifest)("lists every written file in the manifest", () => {
     const m = readJson("manifest.json");
     for (const f of m.files) expect(fs.existsSync(path.join(ASSETS, f)), f).toBe(true);
-  });
-
-  it.skipIf(!fs.existsSync(SNAPSHOT))("feeds the tables with the same values as before the migration", () => {
-    const snap = JSON.parse(fs.readFileSync(SNAPSHOT, "utf8"));
-    const plain = (v: unknown) => JSON.parse(JSON.stringify(v));
-    expect(plain(strings)).toEqual(snap.strings);
-    expect(plain(tables)).toEqual(snap.tables);
-    expect(plain(dungeon)).toEqual(snap.dungeon);
   });
 });
