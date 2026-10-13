@@ -608,5 +608,12 @@ export interface CombatApi {
 }
 
 export async function runCombat(g: Game, req: CombatRequest): Promise<CombatResult> {
-  return new Combat(g, req).run();
+  const c = new Combat(g, req);
+  // dev: the running fight for scripted runs (positions of the party and the monsters)
+  if (import.meta.env.DEV) (window as unknown as { __combat: Combat | null }).__combat = c;
+  try {
+    return await c.run();
+  } finally {
+    if (import.meta.env.DEV) (window as unknown as { __combat: Combat | null }).__combat = null;
+  }
 }
