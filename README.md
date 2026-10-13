@@ -138,6 +138,6 @@ play-tested against the original routines; the debug panel (F12) prepares each o
 
 The source code is under the [MIT license](LICENSE). The content extracted from Ultima IV (maps,
 dialogues, texts) and its translations belong to their rights holders; the edition's artwork, sounds
-and music are © 2026 Ben Marchand (see `LICENSE`). Ultima is a trademark of Electronic Arts; this
+and music are © 2026 Benjamin Marchand (see `LICENSE`). Ultima is a trademark of Electronic Arts; this
 project is not affiliated with or endorsed by them. The earlier history of the project is archived in
 [ultima4-ts](https://github.com/cyberbobjr/ultima4-ts).

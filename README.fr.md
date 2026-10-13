@@ -146,6 +146,6 @@ aux routines d’origine ; le panneau de débogage (F12) prépare chacun d’eux
 
 Le code source est sous [licence MIT](LICENSE). Le contenu extrait d'Ultima IV (cartes, dialogues,
 textes) et ses traductions appartiennent à leurs ayants droit ; les illustrations, sons et musiques de
-l'édition sont © 2026 Ben Marchand (voir `LICENSE`). Ultima est une marque d'Electronic Arts ; ce projet
+l'édition sont © 2026 Benjamin Marchand (voir `LICENSE`). Ultima est une marque d'Electronic Arts ; ce projet
 n'est ni affilié ni approuvé par elle. L'historique antérieur du projet est archivé dans
 [ultima4-ts](https://github.com/cyberbobjr/ultima4-ts).
