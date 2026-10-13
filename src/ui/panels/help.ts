@@ -75,10 +75,11 @@ function spellsSection(g: Game): HTMLElement {
     const have = g.save?.mixtures[i] ?? 0;
     return h("tr", {},
       h("td", {}, kbd(sp.letter)),
-      h("th", { scope: "row" }, sp.name, h("small", { class: "help-spell-desc" }, t(`help.spell.${sp.letter}`))),
+      // name and description as separate blocks (readable even without the stylesheet)
+      h("th", { scope: "row" }, h("div", {}, sp.name), h("div", { class: "help-spell-desc" }, t(`help.spell.${sp.letter}`))),
       h("td", { class: "help-num" }, String(sp.mp)),
       h("td", {}, h("span", { class: `help-tag help-sctx-${sp.context}` }, t(`help.sctx.${sp.context}`))),
-      h("td", {}, h("ul", { class: "help-reagents" }, reagents.map((r) => h("li", {}, r)))),
+      h("td", {}, h("div", { class: "help-reagents" }, reagents.map((r) => h("div", {}, r)))),
       h("td", { class: "help-num" }, g.save ? String(have) : "-"));
   });
   return h("div", {},
