@@ -117,7 +117,8 @@ const TEMPLATE = { bull: "horse", rat: "cat" };
 /**
  * Map places and objects drawn over the terrain (transparent background), 64 candidates each. A string is a
  * world map place; an object gives `desc`, the contact sheet `ground` (GROUNDS key), `suffix` (replaces
- * "overworld map icon") and `ref` (name of a picked sprite given as subject reference: same object, another view).
+ * "overworld map icon"), `ref` (name of a picked sprite given as subject reference: same object, another view)
+ * and `size` ([w, h], default one cell; up to 85 px the API still returns 16 candidates).
  */
 const OBJ = "game object, low top-down view";
 export const SPRITES = {
@@ -125,6 +126,8 @@ export const SPRITES = {
   castle: "small white stone castle seen from above, four corner towers, blue roofs, red flags, gate",
   shrine: "small circle of white standing stones with a glowing ankh in the middle, seen from above",
   dungeon: "dark cave entrance in a grey rock mound with a wooden frame, seen from above",
+  // Lord British's castle (0x0E, between its wings 0x0D/0x0F): wider than a cell, drawn over the wings
+  lbcastle: { desc: "grand royal castle seen from above, wide white stone keep with a tall central tower and two side wings with round towers, blue roofs, golden banners, large gate, stone ramparts", size: [80, 56] },
   // transports (0x10-0x13 ship, 0x80-0x83 pirate ship, 0x14/0x15 horse, 0x18 balloon); W is drawn, E mirrored
   ship: { desc: "wooden sailing ship with white square sails and a small red pennant, side view, the bow points to the left, sailing to the left, no water", ground: "sea", suffix: OBJ },
   "ship-n": { desc: "the same wooden sailing ship seen from behind, sailing away from the viewer, stern in front, white square sails seen from the back, no water", ground: "sea", suffix: OBJ, ref: "ship" },
@@ -204,23 +207,28 @@ export const TILESETS = {
   ],
 };
 
-/** Style reference for every sprite: the Avatar (outline, detail and shading, not its colours). */
+/**
+ * Style reference for every sprite: the Avatar as first created (outline, detail and shading, not its colours),
+ * kept as style-ref.png when the Avatar got its hair, so that new sprites keep the look of the existing ones.
+ */
 function styleRef() {
-  const f = path.join(OUT, "character-avatar-south.png");
+  const f = path.join(OUT, "style-ref.png");
   return { image: b64(f), size: { width: SIZE, height: SIZE } };
 }
 
-/** 64 candidates in an 8x8 grid, each over a terrain tile, zoomed: picks are made by grid index. */
+/** The candidates in a grid of 8 (4 for wide ones), each over a terrain tile, zoomed: picks are made by index. */
 async function contactSheet(dir, out, groundFile) {
   const { PNG } = await import("pngjs");
   const files = fs.readdirSync(dir).filter((f) => /^\d+\.png$/.test(f)).sort((a, b) => parseInt(a) - parseInt(b));
   const ground = groundFile && fs.existsSync(groundFile) ? PNG.sync.read(fs.readFileSync(groundFile)) : null;
-  const Z = 3, C = SIZE * Z + 4, sheet = new PNG({ width: 8 * C, height: Math.ceil(files.length / 8) * C });
+  const first = PNG.sync.read(fs.readFileSync(path.join(dir, files[0]))), IW = first.width, IH = first.height;
+  const cols = IW > SIZE ? 4 : 8, Z = 3, CW = IW * Z + 4, CH = IH * Z + 4;
+  const sheet = new PNG({ width: cols * CW, height: Math.ceil(files.length / cols) * CH });
   sheet.data.fill(30);
   files.forEach((f, i) => {
     const img = PNG.sync.read(fs.readFileSync(path.join(dir, f)));
-    const x0 = (i % 8) * C + 2, y0 = Math.floor(i / 8) * C + 2;
-    for (let y = 0; y < SIZE * Z; y++) for (let x = 0; x < SIZE * Z; x++) {
+    const x0 = (i % cols) * CW + 2, y0 = Math.floor(i / cols) * CH + 2;
+    for (let y = 0; y < IH * Z; y++) for (let x = 0; x < IW * Z; x++) {
       const sx = Math.floor(x / Z), sy = Math.floor(y / Z), d = ((y0 + y) * sheet.width + x0 + x) * 4;
       const g = ground ? (sy % ground.height * ground.width + sx % ground.width) * 4 : -1;
       const s = sx < img.width && sy < img.height ? (sy * img.width + sx) * 4 : -1, a = s >= 0 ? img.data[s + 3] / 255 : 0;
@@ -240,7 +248,7 @@ if (cmd === "sprite") {
   const picks = JSON.parse(fs.readFileSync(path.resolve("tools/packs/pixellab-picks.json"), "utf8"));
   const r = await job("/generate-image-v2", {
     description: `${s.desc}, ${s.suffix ?? "overworld map icon"}, ${STYLE}`,
-    image_size: { width: SIZE, height: SIZE },
+    image_size: { width: s.size?.[0] ?? SIZE, height: s.size?.[1] ?? SIZE },
     no_background: true,
     style_image: styleRef(),
     style_options: { color_palette: false, outline: true, detail: true, shading: true },
@@ -447,6 +455,47 @@ if (cmd === "headless") {
   fs.rmSync(dir, { recursive: true, force: true });
   frames.forEach((img, i) => save(img, path.join(dir, `${i + 1}.png`)));
   console.log(`headless: ${frames.length} frames`);
+}
+
+/**
+ * `avatar <seed>` / `avatar-anim <seed>`: the created Avatar wore a cowboy hat. Its first idle frame
+ * (avatar-base.png, 44 px character canvas) loses the hat, and the head area is inpainted with blond hair
+ * (avatar-hair-<seed>.png, ~10 generations; several seeds to choose from); `avatar-anim <seed> [anim seed]` animates the
+ * picked one like the headless brute (~1 generation) and makes it the Avatar's still and frames.
+ */
+if (cmd === "avatar" || cmd === "avatar-anim") {
+  const { PNG } = await import("pngjs");
+  const seed = Number(arg ?? 1), hair = path.join(OUT, `avatar-hair-${seed}.png`);
+  if (cmd === "avatar") {
+    const im = PNG.sync.read(fs.readFileSync(path.join(OUT, "avatar-base.png"))), W = im.width;
+    // the hat: crown rows 7-10, brim rows 10-14
+    for (let y = 6; y <= 14; y++) for (let x = 11; x <= 32; x++) im.data[(y * W + x) * 4 + 3] = 0;
+    const mask = new PNG({ width: W, height: W });
+    for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
+    // the hat area and the sides of the face, where the hair falls
+    for (let y = 5; y <= 21; y++) for (let x = 10; x <= 33; x++)
+      if (y <= 15 || x <= 16 || x >= 27) mask.data.set([255, 255, 255, 255], (y * W + x) * 4);
+    const sized = (png) => ({ image: b64(PNG.sync.write(png)), size: { width: W, height: W } });
+    const r = await job("/inpaint-v3", {
+      description: "young hero with long flowing golden blond hair falling to the shoulders, bare head, no hat, " + STYLE,
+      inpainting_image: sized(im), mask_image: sized(mask), no_background: true, crop_to_mask: true, seed,
+    }, `avatar-hair-${seed}`);
+    const inp = r.last_response ?? r;
+    save(inp.image ?? inp.images[0], hair);
+    console.log(`avatar: ${hair}; usage ${JSON.stringify(r.usage)}`);
+  } else {
+    const a = await job("/animate-with-text-v3", {
+      first_frame: b64(hair), action: "subtle idle breathing, the chest rises and falls slightly, the face stays the same with open eyes, the long blond hair stays on the head, the body stays in place",
+      frame_count: 8, no_background: true, seed: Number(process.argv[4] ?? 2), drift_threshold: 0,
+    }, "avatar-anim");
+    // the first image returned is the reference frame itself
+    const frames = (a.last_response ?? a).images.slice(1);
+    const dir = path.join(OUT, "anim", "avatar");
+    fs.rmSync(dir, { recursive: true, force: true });
+    frames.forEach((img, i) => save(img, path.join(dir, `${i + 1}.png`)));
+    fs.copyFileSync(hair, path.join(OUT, "character-avatar-south.png"));
+    console.log(`avatar: ${frames.length} frames`);
+  }
 }
 
 if (cmd === "scene") await scene();

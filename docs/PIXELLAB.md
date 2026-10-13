@@ -69,6 +69,7 @@ All in `tools/packs/pixellab-sample.mjs`; keep these to stay consistent:
 | `characters` / `character <name>` | create the characters not on disk yet → `character-<name>-south.png` + `.json` (id) |
 | `animate <name\|all>` | idle animation → `anim/<name>/1..8.png` |
 | `headless [seed]` | headless brute: head erased from `headless-base.png`, neck stump inpainted, animated with `drift_threshold: 0` (otherwise the head grows back) |
+| `avatar <seed>` / `avatar-anim <seed> [anim seed]` | the Avatar's hat replaced by inpainted blond hair (`avatar-base.png` = its first original frame), then animated; sprites keep the original Avatar as style reference (`style-ref.png`) |
 | `sprite <name> [seed]` | 64 candidates → `sprite-<name>[-<seed>]/` + contact sheet over the entry's ground |
 | `tiles <set> [seed]` | opaque tile set → `tiles-<set>-<seed>/` + 3×3 seam sheet |
 | `scene` | mock 11×11 world view with the picks (frames + GIF) |

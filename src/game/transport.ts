@@ -3,7 +3,7 @@ import type { Game } from "./game";
 import { DIRS, tileAt, type Dir } from "./maps";
 import { MSG_CORE } from "./texts/core";
 import { T, tileFlags, Walk } from "./tiles";
-import { worldMonsterAt } from "./world/monsters";
+import { pirateAmbush, worldMonsterAt } from "./world/monsters";
 
 export function board(g: Game) {
   g.con.print(MSG_CORE.board);
@@ -57,5 +57,6 @@ export async function sail(g: Game, dir: Dir) {
     g.con.print(MSG_CORE.slowProgress); g.endTurn(); return;
   }
   g.setPos(g.px + dx, g.py + dy);
+  pirateAmbush(g, dir);
   g.endTurn();
 }

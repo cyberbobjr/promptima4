@@ -55,7 +55,8 @@ function tint(img, file, k) {
 }
 
 /** Sprite name -> SHAPES ids (docs/TILEPACK-LAYERED.md, last table). */
-const IDS = { dungeon: [9], town: [10], castle: [11, 14], shrine: [30], avatar: [0x1f] };
+// lbcastle: Lord British's castle, centred on 0x0E and wide enough to cover its wings 0x0D/0x0F (grass)
+const IDS = { dungeon: [9], town: [10], castle: [11], lbcastle: [14], shrine: [30], avatar: [0x1f] };
 const range = (a, n) => Array.from({ length: n }, (_, i) => a + i);
 ["mage", "bard", "fighter", "druid", "tinker", "paladin", "ranger", "shepherd"].forEach((n, i) => (IDS[n] = range(0x20 + 2 * i, 2)));
 ["guard", "merchant", "minstrel", "jester", "beggar", "child", "bull", "king"].forEach((n, i) => (IDS[n] = range(0x50 + 2 * i, 2)));
@@ -63,7 +64,7 @@ const range = (a, n) => Array.from({ length: n }, (_, i) => a + i);
 ["rat", "bat", "spider", "ghost", "slime", "troll", "gremlin", "mimic", "reaper", "insects", "gazer", "phantom", "orc",
   "skeleton", "rogue", "python", "ettin", "headless", "cyclops", "wisp", "evilmage", "liche", "lavalizard", "zorn", "daemon",
   "hydra", "dragon", "balron"].forEach((n, i) => (IDS[n] = range(0x90 + 4 * i, 4)));
-const PLACES = ["town", "castle", "shrine", "dungeon"];
+const PLACES = ["town", "castle", "lbcastle", "shrine", "dungeon"];
 
 fs.rmSync(OUT, { recursive: true, force: true });
 

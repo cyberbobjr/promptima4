@@ -4,7 +4,7 @@
 // Changes are only applied while the game waits for a key (g.input.waiting). Actions that run game
 // code (fights, entering places, the Codex) must run inside the main loop, not next to it: they are
 // queued as a private key that the main loop hands to Game.command, wrapped here for that one key.
-import { ABYSS_ENTRANCE, ARMOURS, CLASSES, ITEM_FLAGS, MONSTERS, REAGENTS, SPELLS, STONE_COLORS, WEAPONS } from "../../data/tables";
+import { ABYSS_ENTRANCE, ARMOURS, CLASSES, ITEM_FLAGS, MONSTERS, MOONGATES, REAGENTS, SPELLS, STONE_COLORS, WEAPONS } from "../../data/tables";
 import { config, updateConfig } from "../../config/config";
 import type { PlayerRecord } from "../../formats/save";
 import { runCodex } from "../../game/endgame/codex";
@@ -91,6 +91,9 @@ function fillParty(g: Game, n: number) {
   }
   s.members = Math.max(s.members, n);
 }
+
+/** Moon phases 0 (new) .. 4 (full) .. 7, as in the status line. */
+const MOON_GLYPHS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
 
 const ABYSS_ITEMS = ITEM_FLAGS.bell | ITEM_FLAGS.book | ITEM_FLAGS.candle | ITEM_FLAGS.bellRung | ITEM_FLAGS.bookRead | ITEM_FLAGS.candleLit;
 const KEY_PARTS = ITEM_FLAGS.keyTruth | ITEM_FLAGS.keyLove | ITEM_FLAGS.keyCourage;
@@ -395,6 +398,29 @@ export function createDebugPanel(g: Game): Panel {
                 (g.sky as unknown as { trammelByte: number }).trammelByte = -1; // re-read from the save on the next tick
               }))),
             h("p", { class: "dbg-note" }, t("debug.moonsHint"))),
+          section(t("debug.gates"),
+            h("div", { class: "dbg-table-wrap" }, h("table", { class: "dbg-table" },
+              h("thead", {}, h("tr", {},
+                ...["debug.gate", "debug.position", "debug.trammel", "debug.felucca", ""].map((k) => h("th", {}, k ? t(k) : "")))),
+              h("tbody", {}, MOONGATES.map((m) => h("tr", {
+                class: [m.phase === s.trammelPhase ? "open" : "", m.phase === s.feluccaPhase ? "dest" : ""].join(" ").trim(),
+              },
+                h("td", {}, m.nearTown),
+                h("td", {}, `${m.x}, ${m.y}`),
+                h("td", {}, `${MOON_GLYPHS[m.phase]} ${m.phase}`, m.phase === s.trammelPhase ? h("small", {}, t("debug.gateOpen")) : null),
+                h("td", {}, `${MOON_GLYPHS[m.phase]} ${m.phase}`, m.phase === s.feluccaPhase ? h("small", {}, t("debug.gateDest")) : null),
+                h("td", {}, h("div", { class: "dbg-cell-actions" },
+                  btn(t("debug.gateOpenIt"), apply(() => {
+                    s.trammelPhase = m.phase;
+                    (g.sky as unknown as { trammelByte: number }).trammelByte = -1;
+                  })),
+                  btn(t("debug.teleportNear"), () => {
+                    if (!atPrompt(g)) return;
+                    const [x, y] = besides(g, m.x, m.y);
+                    teleport(g, x, y);
+                    ctx.close();
+                  }, "prompt")))))))),
+            h("p", { class: "dbg-note" }, t("debug.gatesHint"))),
         );
       }
 

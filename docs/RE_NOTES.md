@@ -77,6 +77,8 @@ Companion to `src/data/tables.ts`. Everything was extracted from `AVATAR.EXE` of
 | 1000:1584 | party_hazard_damage | ship hull -10 or 10+rand%15 each 50% |
 | 1000:29EF | slow_terrain | |
 | 1000:2999 | is_walkable | list DS:0x0904 |
+| 1000:2B19 | move north (start) | 0x0E (Lord British's gate, not in DS:0x0904) is entered only by a step north, which skips is_walkable; standing on it (DS:0x9444 == 0x0E) north is blocked. No such case for S/E/W |
+| 1000:280A | pirate ambush | after a step east (2E4F on foot, 2EC5 at sea) onto (0xDD,0xE0), the mouth of the Abyss lagoon: monster slots 0-7 become pirate ships, x DS:08EC, y DS:08F4, tile DS:08FC. 2C8A also tests the Humility approach x 0xE5..0xE9, y 0xD4..0xD8 after a step south (1000:27D9, daemons) |
 | 1000:7631 / 7732 | ready_weapon / wear_armour | class masks |
 
 ### Party record (PARTY.SAV image in DS)
@@ -228,7 +230,7 @@ Source: unpacked AVATAR.EXE image, DS = image 0xF0D0. (Scratch extraction script
 
 ### Functions
 - 1000:4018 cmd_enter (tile dispatch); 3E30 load_town(id); 3F03 enter_dungeon; 3EE4/3E94 load_dungeon; 3F4A enter_town; 3FB9 enter_abyss; 2747 exit_town.
-- 2A91 moongate_step; 3A80 moon_tick; 3A4F moongate_open_pos; 35C7 wind_tick; 353D draw_wind; 2A5A sail_wind_check; 2B8C/2C8A/2DA9/2EC5 move N/S/E/W.
+- 2A91 moongate_step; 3A80 moon_tick; 3A4F moongate_open_pos; 35C7 wind_tick; 353D draw_wind; 2A5A sail_wind_check; 2B8C/2C8A/2DA9/2EC5 move N/S/W/E (2D44 decrements x, 2E4F/2941 increments it; 2EC5 turns the horse to 0x15).
 - E72C shrine_meditate; E6DF show_vision_pic; C922 hawkwind; E21E lord_british_help; A2BD npc_join; A163 npc_yes_no (humility); A3A2 give_beggar.
 - 09F8 karma_inc(n,&k); 0A17 karma_dec(n,&k); 0AFE is_non_evil(tile); 097D add_xp(n, player).
 - 07AE cmd_use (table DS:0434: name, handler); 0311 use_stone; 01E1 altar_room_stones; 0487 bell; 04C0 book; 0501 candle; 044C key; 0553 horn; 058C wheel; 05CE skull.
@@ -302,7 +304,7 @@ Durations from the model above ("half" = half-period, the time between two toggl
 ### Call sites (98)
 | n | where (1000:xxxx) | what | port |
 |---|---|---|---|
-| 0 | 2B19/2B8C, 2C25/2C8A, 2D44/2DA9, 2E4F/2EC5 (N, S, E, W) | on foot / horseback: once for the command, once more for a step actually taken (not when slowed); the second step of the flag DS:95C6 clicks again | Game.move |
+| 0 | 2B19/2B8C, 2C25/2C8A, 2D44/2DA9, 2E4F/2EC5 (N, S, W, E) | on foot / horseback: once for the command, once more for a step actually taken (not when slowed); the second step of the flag DS:95C6 clicks again | Game.move |
 | 0 | 7AE3 (x2) | combat move: same pattern | combat moveMember |
 | 1 | 29C3 | blocked message (DS:0929) + keyboard flush; from the walk routines, 7AE3, dungeon 891E/895F | Game.blocked (move, sail, dungeon, combat; no flush) |
 | 1 | 11F9, 12D6, 1445, 162F | key prompt out of range, direction prompt with another key, line input full / backspace on empty, Y/N prompt | prompts.ts, Game.askDir |

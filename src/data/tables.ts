@@ -190,6 +190,19 @@ export const PERSON_COMBAT: readonly PersonCombatDef[] = withGetters([
 // Bull, Lord British). Class index = party record byte +0x25; bit (0x80 >> class) in the equipment masks.
 export const CLASSES: readonly string[] = lazyList(8, (i) => T.people[i]);
 
+/**
+ * 1000:280A: the pirate ambush in the lagoon of the Isle of the Abyss, set when the party steps east onto the
+ * mouth of its channel (`trigger`, tested after the step by 1000:2E4F on foot and 1000:2EC5 at sea). Eight pirate
+ * ships replace the monster slots 0-7: x DS:08EC, y DS:08F4, tile (heading) DS:08FC.
+ */
+export const PIRATE_AMBUSH = {
+  trigger: { x: 0xdd, y: 0xe0 },
+  ships: [
+    { x: 0xe0, y: 0xdc, tile: 0x82 }, { x: 0xe0, y: 0xe4, tile: 0x82 }, { x: 0xe2, y: 0xdc, tile: 0x82 }, { x: 0xe3, y: 0xe4, tile: 0x82 },
+    { x: 0xe4, y: 0xe3, tile: 0x83 }, { x: 0xe5, y: 0xe1, tile: 0x83 }, { x: 0xe5, y: 0xdf, tile: 0x81 }, { x: 0xe4, y: 0xde, tile: 0x81 },
+  ],
+} as const;
+
 /** Where monsters come from (spawn code). */
 export const MONSTER_SPAWN = {
   // 1000:5851 (world map, mode 1): once per turn, 1/16 chance; then for each free slot 0..3 pick a random

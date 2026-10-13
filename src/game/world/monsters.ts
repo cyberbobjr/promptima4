@@ -1,7 +1,7 @@
 // Overworld monsters (1000:5851, 1000:5712), their fights and the party's death (1000:0EB1);
 // pirate ships and sea serpents/dragons firing at the party (1000:564B), whirlpools and twisters
 // (1000:7918), the party hazard they cause (1000:1584).
-import { COMBAT_MAP_RULES, MONSTER_SPAWN } from "../../data/tables";
+import { COMBAT_MAP_RULES, MONSTER_SPAWN, PIRATE_AMBUSH } from "../../data/tables";
 import { creatureInfo, isNonEvil, spawnGroup, type CombatRequest } from "../combat";
 import { loadArena } from "../arenas";
 import type { Game } from "../game";
@@ -27,6 +27,16 @@ const HEADING_STEP: readonly [number, number][] = [[-1, 0], [0, -1], [1, 0], [0,
 const WHIRLPOOL = 0x8c, TWISTER = 0x8e;
 /** 1000:786F: where a whirlpool throws the party. */
 const WHIRLPOOL_EXIT = { x: 0x7f, y: 0x4e };
+
+/**
+ * 1000:280A: a step east onto the mouth of the Abyss lagoon fills it with pirate ships. The original overwrites
+ * the monster slots 0-7; the port's object list has no slots: the monsters present give way to the eight ships.
+ */
+export function pirateAmbush(g: Game, dir: "N" | "S" | "E" | "W") {
+  const { trigger, ships } = PIRATE_AMBUSH;
+  if (g.map.kind !== "world" || dir !== "E" || g.px !== trigger.x || g.py !== trigger.y) return;
+  g.objects = [...g.objects.filter((o) => o.tile < 0x80), ...ships.map((s) => ({ tile: s.tile, x: s.x, y: s.y }))];
+}
 
 export function worldMonsterAt(g: Game, x: number, y: number): WorldObject | undefined {
   return g.objects.find((o) => o.tile >= 0x80 && o.x === (x & 255) && o.y === (y & 255));

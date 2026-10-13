@@ -135,10 +135,19 @@
   },
   {
    "name": "castle",
-   "ids": [11, 14],
+   "ids": [11],
    "image": "sprites/castle.png",
    "w": 32,
    "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "lbcastle",
+   "ids": [14],
+   "image": "sprites/lbcastle.png",
+   "w": 80,
+   "h": 56,
    "frames": 1,
    "dy": 0
   },

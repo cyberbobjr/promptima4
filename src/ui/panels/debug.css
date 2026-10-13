@@ -36,6 +36,15 @@
 .dbg-tests li > button { flex: none; }
 .dbg-tests strong { display: block; font-weight: normal; font-size: 10px; color: var(--ui-text); }
 .dbg-tests small { display: block; font-size: 9px; color: var(--ui-dim); line-height: 1.6; }
+.dbg-table-wrap { overflow-x: auto; }
+.dbg-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.dbg-table th { text-align: left; font-weight: normal; color: var(--ui-dim); padding: 4px 6px; border-bottom: 1px solid var(--ui-line); }
+.dbg-table td { padding: 4px 6px; border-bottom: 1px solid #22225a; white-space: nowrap; }
+.dbg-table td small { margin-left: 6px; font-size: 8px; }
+.dbg-table tr.open td:nth-child(3), .dbg-table tr.open td:first-child { color: #55ff55; }
+.dbg-table tr.dest td:nth-child(4) { color: #ffff55; }
+.dbg-table .dbg-cell-actions { display: flex; gap: 4px; justify-content: flex-end; }
 @media (max-width: 520px) {
   .dbg-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .dbg-table td:nth-child(2), .dbg-table th:nth-child(2) { display: none; }
 }

@@ -28,7 +28,7 @@ import { runDungeon } from "./dungeon";
 import { LOCATIONS } from "./locations";
 import { Sky, checkMoongate } from "./world/sky";
 import { decodeObjects, type WorldObject } from "./world/objects";
-import { partyDeath, worldFight, worldTurn } from "./world/monsters";
+import { partyDeath, pirateAmbush, worldFight, worldTurn } from "./world/monsters";
 import { board, exitTransport, sail, yell } from "./transport";
 import { closeDoors, descend, enter, jimmy, klimb, leaveTown, moveNpcs, open, talk } from "./places";
 import { attack, getChest, holeUp, locate, openChest, quitSave, readyWeapon, volume, wearArmour, ztats, ztatsFor } from "./actions";
@@ -333,12 +333,18 @@ export class Game {
     }
     const t = tileAt(this.map, nx, ny);
     const need = this.onHorse ? Walk.Horse : Walk.Foot;
-    const blocked = !(tileFlags(t) & need) || !!this.npcAt(nx, ny) ||
+    // 1000:2B19 (north only): Lord British's gate 0x0E is not in the walkable list (DS:0904) but a step north
+    // onto it skips that test; standing on it (DS:9444), north is blocked
+    const world = this.map.kind === "world";
+    const lcbGate = world && dir === "N" && t === T.LCB_ENTRANCE;
+    const onGate = world && dir === "N" && tileAt(this.map, this.px, this.py) === T.LCB_ENTRANCE;
+    const blocked = onGate || (!lcbGate && !(tileFlags(t) & need)) || !!this.npcAt(nx, ny) ||
       (this.map.kind === "world" && this.onFoot && this.objects.some((o) => o.x === (nx & 255) && o.y === (ny & 255) && o.tile >= 0x80));
     if (blocked) { await this.blocked(); this.endTurn(); return; }
     if (rand(1000) < slowChance(t) * 1000) { this.con.print(MSG_CORE.slowProgress); this.endTurn(); return; }
     await playEffect(SFX.STEP);
     this.setPos(nx, ny);
+    pirateAmbush(this, dir);
     this.endTurn();
     await checkMoongate(this);
     // 1000:27D9: walking south into the approach of the Shrine of Humility summons daemons, unless the horn was blown
