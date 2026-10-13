@@ -12,5 +12,7 @@
   "hud.status.P": "Poisoned",
   "hud.status.S": "Asleep",
   "hud.status.D": "Dead",
-  "hud.status.G": "Good"
+  "hud.status.G": "Good",
+  "hud.weapons": "Weapons",
+  "hud.armour": "Armour"
 }

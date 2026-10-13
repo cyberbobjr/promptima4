@@ -8,6 +8,7 @@ import { CLASS_NAMES } from "../../game/game";
 import { t } from "../../i18n/i18n";
 import { config, onConfigChange, updateConfig } from "../../config/config";
 import type { ScreenRect } from "../../render/renderer";
+import type { StatusPanel } from "../layers";
 import { h } from "./dom";
 import type { Shell } from "./shell";
 import "./hud.css";
@@ -74,14 +75,15 @@ export function installHud(shell: Shell, g: Game): void {
     if (!playing || !s) return;
 
     // party, or the list a layer shows instead
-    let list: { title: string; rows: string[] } | null = null;
+    let list: StatusPanel | null = null;
     for (let i = layers.length - 1; i >= 0 && !list; i--) list = layers[i].panel?.() ?? layers[i].status?.() ?? null;
     const flash = flashedRows(g.layers.inverts());
     const members = g.members.slice(0, s.members);
     const pk = JSON.stringify([list, members.map((p) => [p.name, p.klass, p.hp, p.hpMax, p.status]), g.activeMember, [...flash]]);
     if (pk !== partyKey) {
       partyKey = pk;
-      if (list) party.replaceChildren(h("h2", {}, list.title), h("pre", { class: "hud-list" }, list.rows.join("\n")));
+      if (list) party.replaceChildren(h("h2", {}, list.title),
+        h("div", { class: "hud-list" }, list.rows.map((row, i) => h("div", { class: list!.marks?.[i] || undefined }, row))));
       else party.replaceChildren(...members.map((p, i) => {
         const hpPct = p.hpMax > 0 ? Math.max(0, Math.min(100, Math.round((100 * p.hp) / p.hpMax))) : 0;
         const state = p.status === "P" ? "poison" : p.status === "S" ? "sleep" : p.status === "D" ? "dead" : hpPct < 25 ? "low" : "";

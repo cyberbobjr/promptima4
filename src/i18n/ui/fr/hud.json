@@ -12,5 +12,7 @@
   "hud.status.P": "Empoisonné",
   "hud.status.S": "Endormi",
   "hud.status.D": "Mort",
-  "hud.status.G": "En forme"
+  "hud.status.G": "En forme",
+  "hud.weapons": "Armes",
+  "hud.armour": "Armures"
 }

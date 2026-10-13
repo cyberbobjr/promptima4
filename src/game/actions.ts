@@ -4,7 +4,8 @@ import { encodeSave, type PlayerRecord } from "../formats/save";
 import { ARMOURS, CAMP_RULES, CHEST_TRAPS, WEAPONS } from "../data/tables";
 import { isAlive } from "./party";
 import { MSG_CORE } from "./texts/core";
-import { equipArmour, equipWeapon } from "./equipment";
+import { classMayUseArmour, classMayUseWeapon, equipArmour, equipWeapon } from "./equipment";
+import { t } from "../i18n/i18n";
 import { say, ticks } from "./prompts";
 import { isNonEvil, spawnGroup } from "./combat";
 import { loadArena } from "./arenas";
@@ -71,6 +72,27 @@ export async function ztats(g: Game) {
   printStats(g, g.save.players[i]);
 }
 
+/**
+ * The weapons or armour the party owns, by letter, shown in place of the party while R)eady or W)ear waits for
+ * the letter (responsive layout; the original shows nothing): the ones the member's class may not use are
+ * dimmed, the one in use highlighted. Interpretation of the port.
+ */
+function equipmentList(g: Game, p: PlayerRecord, kind: "weapons" | "armour"): () => void {
+  const defs = kind === "weapons" ? WEAPONS : ARMOURS, owned = kind === "weapons" ? g.save.weapons : g.save.armour;
+  const inUse = kind === "weapons" ? p.weapon : p.armour;
+  const allowed = (i: number) => (kind === "weapons" ? classMayUseWeapon : classMayUseArmour)(p.klass, i);
+  const shown = defs.map((_, i) => i).filter((i) => i === 0 || owned[i] > 0);
+  const layer = g.layers.push({
+    name: "equipment",
+    panel: () => ({
+      title: t(kind === "weapons" ? "hud.weapons" : "hud.armour"),
+      rows: shown.map((i) => `${String.fromCharCode(65 + i)} ${i === 0 ? "  " : String(owned[i]).padStart(2)} ${defs[i].name}`),
+      marks: shown.map((i) => (i === inUse ? "on" : allowed(i) ? "" : "dim")),
+    }),
+  });
+  return () => layer.remove();
+}
+
 /** R)eady a weapon (1000:7631): letter A..P from the inventory, class mask bit 0x80 >> class. */
 export async function readyWeapon(g: Game, member?: number) {
   g.con.print(MSG_CORE.readyWeapon);
@@ -78,7 +100,9 @@ export async function readyWeapon(g: Game, member?: number) {
   if (i < 0) return;
   const p = g.save.players[i];
   await say(g, MSG_CORE.weapon);
-  const k = (await g.getKey()).toUpperCase();
+  const hide = equipmentList(g, p, "weapons");
+  let k: string;
+  try { k = (await g.getKey()).toUpperCase(); } finally { hide(); }
   const w = k.charCodeAt(0) - 65;
   if (!(w >= 0 && w < 16)) { g.con.println(""); return; }
   g.con.println(WEAPONS[w].name);
@@ -97,7 +121,9 @@ export async function wearArmour(g: Game) {
   if (i < 0) return;
   const p = g.save.players[i];
   await say(g, MSG_CORE.armour);
-  const k = (await g.getKey()).toUpperCase();
+  const hide = equipmentList(g, p, "armour");
+  let k: string;
+  try { k = (await g.getKey()).toUpperCase(); } finally { hide(); }
   const a = k.charCodeAt(0) - 65;
   if (!(a >= 0 && a < 8)) { g.con.println(""); return; }
   g.con.println(ARMOURS[a].name);

@@ -11,7 +11,8 @@ import type { Scene, Camera } from "three";
 import type { Renderer, ScreenRect } from "../render/renderer";
 
 /** Contents of the party panel when a mode replaces it (shops, inventories): title + 8 rows. */
-export interface StatusPanel { title: string; rows: string[] }
+/** A list shown in place of the party; `marks` (responsive layout only) dims or highlights rows. */
+export interface StatusPanel { title: string; rows: string[]; marks?: ("" | "dim" | "on")[] }
 
 export interface Layer {
   /** Debug name. */
