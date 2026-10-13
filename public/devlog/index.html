@@ -40,7 +40,7 @@
     <div class="stat"><b>339</b><span>fonctions originales citées par adresse dans le code</span></div>
     <div class="stat"><b>222</b><span>offsets de données (DS) cités</span></div>
     <div class="stat"><b>~14 400</b><span>lignes de TypeScript dans le moteur</span></div>
-    <div class="stat"><b>0</b><span>octet du jeu original dans le dépôt</span></div>
+    <div class="stat"><b>0</b><span>image du jeu original dans le dépôt</span></div>
   </div>
 
   <h2>Le point de départ</h2>
@@ -84,10 +84,12 @@
   rendu 3D des donjons), le code le dit explicitement.</p>
 
   <h3>4. Extraire une fois, ne plus jamais lire l'original</h3>
-  <p>Le moteur ne lit jamais les fichiers d'origine. Un outil d'extraction les convertit <em>une fois</em>, depuis la
-  copie du joueur, en formats modernes (PNG, cartes et dialogues JSON, tables, catalogues de textes). Les textes
-  originaux ne figurent nulle part dans le code source, pas même en commentaire : le code déclare seulement
-  <em>où</em> chaque texte se trouve dans l'exécutable (un offset), et l'extracteur parcourt ce même registre.</p>
+  <p>Le moteur ne lit jamais les fichiers d'origine. Un outil d'extraction les convertit <em>une fois</em> en formats
+  modernes (PNG, cartes et dialogues JSON, tables, catalogues de textes). Le dépôt public garde les données (cartes,
+  dialogues, textes) mais aucun graphisme original : le jeu se joue tel quel avec les graphismes de l'édition 2026, et
+  qui possède le jeu peut extraire les graphismes de 1987 depuis sa propre copie. Le code source, lui, ne contient
+  aucun texte original, pas même en commentaire : il déclare seulement <em>où</em> chaque texte se trouve dans
+  l'exécutable (un offset), et l'extracteur parcourt ce même registre.</p>
 
   <h3>5. Vérifier par l'outil, pas par la confiance</h3>
   <p>Le générateur aléatoire original est reproduit à l'identique et peut recevoir une graine. Cela rend possibles
@@ -151,8 +153,8 @@
   <h3>Les garde-fous sont des règles, pas des intentions</h3>
   <p>La contrainte la plus importante du projet est juridique : ne jamais republier le contenu original. Elle est
   écrite noir sur blanc dans les instructions du projet (aucun texte original dans le source, pas même en
-  commentaire ; dossiers dérivés ignorés par git ; une branche locale qui ne doit jamais être poussée, protégée par un
-  hook). L'agent les applique à chaque modification, y compris dans ce devlog.</p>
+  commentaire ; graphismes originaux et packs dérivés ignorés par git et exclus du site ; un hook qui refuse tout push
+  qui les contiendrait). L'agent les applique à chaque modification, y compris dans ce devlog.</p>
 
   <h3>L'humain garde la direction et le goût</h3>
   <p>L'agent est rapide et méthodique ; il n'a pas de goût propre. Les choix qui comptent ont été humains : refuser
@@ -173,8 +175,9 @@
 
   <h2>Et maintenant</h2>
   <p>Le jeu est complet, de la création du personnage à la fin du jeu, en anglais et en français, jouable sur
-  <a href="../">promptima.app</a>. Les sprints en cours remplacent les derniers graphismes originaux et repensent
-  l'interface sur téléphone. Le <a href="journal.html">journal</a> raconte les étapes une par une.</p>
+  <a href="../">promptima.app</a>, et son code est ouvert sous licence MIT sur
+  <a href="https://github.com/cyberbobjr/promptima4">GitHub</a>. Le prochain chantier repense l'interface sur
+  téléphone. Le <a href="journal.html">journal</a> raconte les étapes une par une.</p>
 
   <footer>Promptima IV est une réinterprétation non officielle d'un jeu de 1987, sans lien avec ses ayants droit ·
   <a href="../legal/mentions-legales.html">Mentions légales</a></footer>
@@ -193,7 +196,7 @@
     <div class="stat"><b>339</b><span>original functions cited by address in the code</span></div>
     <div class="stat"><b>222</b><span>data (DS) offsets cited</span></div>
     <div class="stat"><b>~14,400</b><span>lines of TypeScript in the engine</span></div>
-    <div class="stat"><b>0</b><span>bytes of the original game in the repository</span></div>
+    <div class="stat"><b>0</b><span>original game graphics in the repository</span></div>
   </div>
 
   <h2>The starting point</h2>
@@ -235,10 +238,12 @@
   the code says so explicitly.</p>
 
   <h3>4. Extract once, never read the original again</h3>
-  <p>The engine never reads the original files. An extraction tool converts them <em>once</em>, from the player's
-  own copy, into modern formats (PNG, JSON maps and dialogues, tables, text catalogs). Original texts appear nowhere
-  in the source code, not even in comments: the code only declares <em>where</em> each text lives in the executable
-  (an offset), and the extractor walks that same registry.</p>
+  <p>The engine never reads the original files. An extraction tool converts them <em>once</em> into modern formats
+  (PNG, JSON maps and dialogues, tables, text catalogs). The public repository keeps the data (maps, dialogues,
+  texts) but no original graphics: the game plays as is with the 2026 edition's art, and anyone who owns the game can
+  extract the 1987 graphics from their own copy. The source code holds no original text, not even in comments: it
+  only declares <em>where</em> each text lives in the executable (an offset), and the extractor walks that same
+  registry.</p>
 
   <h3>5. Verify with tools, not trust</h3>
   <p>The original random generator is reproduced exactly and can be seeded. That makes possible unit tests on the
@@ -298,9 +303,9 @@
 
   <h3>Guardrails are rules, not intentions</h3>
   <p>The project's most important constraint is legal: never republish the original content. It is written down in
-  the project instructions (no original text in the source, not even in comments; derived folders ignored by git; a
-  local branch that must never be pushed, guarded by a hook). The agent applies them on every change, this devlog
-  included.</p>
+  the project instructions (no original text in the source, not even in comments; original graphics and derived packs
+  ignored by git and left out of the site; a hook that refuses any push containing them). The agent applies them on
+  every change, this devlog included.</p>
 
   <h3>The human keeps direction and taste</h3>
   <p>The agent is fast and methodical; it has no taste of its own. The choices that mattered were human: rejecting
@@ -320,8 +325,8 @@
 
   <h2>What now</h2>
   <p>The game is complete, from character creation to the endgame, in English and French, playable on
-  <a href="../">promptima.app</a>. The current sprints replace the last original graphics and rethink the phone
-  interface. The <a href="journal.html">log</a> tells the steps one by one.</p>
+  <a href="../">promptima.app</a>, and its code is open source under the MIT license on
+  <a href="https://github.com/cyberbobjr/promptima4">GitHub</a>. The next step rethinks the phone interface. The <a href="journal.html">log</a> tells the steps one by one.</p>
 
   <footer>Promptima IV is an unofficial reinterpretation of a 1987 game, not affiliated with its rights holders ·
   <a href="../legal/mentions-legales.html">Legal notice</a></footer>
