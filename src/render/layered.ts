@@ -195,11 +195,17 @@ export class LayeredView {
     return any;
   }
 
-  /** Covers the canvas with a tileable texture shifted by `scroll` pixels per frame (wrapping). */
+  /**
+   * Covers the canvas with a tileable texture shifted by `scroll` pixels per frame (wrapping). One fill with a
+   * pattern: under "source-in" (fill layers) every drawImage clears what lies outside its own rectangle, so a
+   * texture drawn tile by tile would only keep its last tile.
+   */
   private tiled(c: CanvasRenderingContext2D, img: ImageBitmap, scroll: [number, number] | undefined, frame: number) {
     const w = img.width, h = img.height, W = N * this.S;
     const ox = (((scroll?.[0] ?? 0) * frame) % w + w) % w, oy = (((scroll?.[1] ?? 0) * frame) % h + h) % h;
-    for (let y = oy - h; y < W; y += h)
-      for (let x = ox - w; x < W; x += w) c.drawImage(img, x, y);
+    const p = c.createPattern(img, "repeat")!;
+    p.setTransform(new DOMMatrix().translateSelf(ox, oy));
+    c.fillStyle = p;
+    c.fillRect(0, 0, W, W);
   }
 }

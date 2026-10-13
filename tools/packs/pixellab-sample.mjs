@@ -145,11 +145,16 @@ export const SPRITES = {
   rocks: { desc: "small pile of three grey boulders", ground: "grass", suffix: OBJ },
   column: { desc: "round white marble column pillar, thick, standing", ground: "brick", suffix: OBJ },
   altar: { desc: "stone altar table covered with a red cloth, two lit candles", ground: "brick", suffix: OBJ },
-  "ladder-up": { desc: "wooden ladder standing upright, leaning up toward a bright opening above", ground: "dungeon", suffix: OBJ },
+  // seed 1 ("wooden ladder standing upright, leaning up toward a bright opening above") had no clear "up" cue;
+  // seed 2 uses this description
+  "ladder-up": { desc: "wooden ladder rising up through a bright glowing square hatch in the ceiling, warm light pouring down from the opening above, the ladder top disappears into the light", ground: "dungeon", suffix: OBJ },
+  // ship decks (combat maps), over the wood floor
+  mast: { desc: "ship mast seen from above on a wooden deck: thick round wooden mast base with a furled sail on its yard and coiled ropes", ground: "wood", suffix: OBJ },
+  wheel: { desc: "ship steering wheel: wooden helm wheel with handles on a small stand", ground: "wood", suffix: OBJ },
   "ladder-down": { desc: "top of a wooden ladder going down into a dark square hole in the floor", ground: "dungeon", suffix: OBJ },
 };
 /** Contact sheet grounds: picked terrain or tile files (relative to OUT). */
-const GROUNDS = { grass: "terrain-1/8.png", sea: "tileset-deep/1111.png", shallows: "tileset-shallows/1111.png", brick: "tiles-paving-1/5.png", dungeon: "tiles-floors-1/4.png" };
+const GROUNDS = { grass: "terrain-1/8.png", sea: "tileset-deep/1111.png", shallows: "tileset-shallows/1111.png", brick: "tiles-paving-1/5.png", dungeon: "tiles-floors-1/4.png", wood: "tiles-floors-1/2.png" };
 
 /**
  * Opaque full-cell tiles (towns, combat and dungeon rooms), one create-tiles-pro call per set so a set shares
@@ -179,6 +184,19 @@ export const TILESETS = {
     "energy field: crackling blue lightning energy",
     "fire field: roaring red and orange flames",
     "sleep field: shimmering magenta and purple magic sparkles",
+  ],
+  // fields-1 fire had horizontal bands (seams when stacked), and 0x48 is mostly the hull filler of the ship
+  // combat maps
+  // the shallows of the transition set are a water-to-sand gradient, not a texture that repeats
+  shallows: [
+    "shallow clear turquoise water over pale sand, small ripples and light caustics, evenly lit, no gradient, seamless",
+    "shallow light blue-green lagoon water, gentle wave highlights spread evenly, seamless water texture",
+  ],
+  fixes: [
+    "fire field: seamless tileable carpet of small flickering flames seen from straight above, flames scattered evenly in every direction, no horizontal rows, no bands",
+    "fire field: burning ground seen from above, glowing embers and small orange and red flame tongues spread evenly, seamless, no rows",
+    "dark tarred wooden ship hull planks seen from above, thick curved boards with iron nails",
+    "dark weathered wooden ship hull side, horizontal heavy planks, impassable",
   ],
 };
 

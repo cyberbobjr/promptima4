@@ -22,16 +22,23 @@ const picks = JSON.parse(fs.readFileSync(PICKS, "utf8"));
 const read = (f) => PNG.sync.read(fs.readFileSync(f));
 const write = (f, img) => { fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, PNG.sync.write(img)); };
 
-/** Terrain layers, bottom to top: [name, transition set, member SHAPES ids, water (fill texture), clip]. */
+/**
+ * Terrain layers, bottom to top: [name, transition set, member SHAPES ids, fill, clip]. fill: true = the set's
+ * full tile scrolled under the mask (water), a file = that texture. Lava (0x4C) is a layer too, so its edges
+ * follow the dual grid instead of square cells: the shape of the flat swamp set, filled with the lava tile.
+ */
+const LAVA = 0x4c;
 const LAYERS = [
-  ["sea", "deep", [1, 2, 3, 4, 5, 6, 7, 8], true],
-  ["shallows", "shallows", [2], true],
-  ["land", "coast", [3, 4, 5, 6, 7, 8]],
+  ["sea", "deep", [1, 2, 3, 4, 5, 6, 7, 8, LAVA], true],
+  // the shallows set is a water-to-sand gradient (square blocks once repeated): swamp shape, tileable texture
+  ["shallows", "swamp", [2], "tiles-shallows-1/0.png"],
+  ["land", "coast", [3, 4, 5, 6, 7, 8, LAVA]],
   ["swamp", "swamp", [3], false, "land"],
   ["scrub", "scrub", [5], false, "land"],
   ["hills", "hills", [7], false, "land"],
   ["forest", "forest", [6], false, "land"],
   ["mountains", "mountains", [8], false, "land"],
+  ["lava", "swamp", [LAVA], `tiles-${picks.tiles.lava}.png`, "land"],
 ];
 
 /** Sprite name -> SHAPES ids (docs/TILEPACK-LAYERED.md, last table). */
@@ -65,7 +72,7 @@ const layers = LAYERS.map(([name, set, members, water, clip]) => {
   write(path.join(OUT, "terrain", `${name}.png`), strip);
   const layer = { name, members, image: `terrain/${name}.png` };
   if (water) {
-    fs.copyFileSync(path.join(dir, "1111.png"), path.join(OUT, "terrain", `${name}-fill.png`));
+    fs.copyFileSync(water === true ? path.join(dir, "1111.png") : path.join(SRC, water), path.join(OUT, "terrain", `${name}-fill.png`));
     Object.assign(layer, { fill: `terrain/${name}-fill.png`, scroll: [1, 0] });
   }
   if (clip) layer.clip = clip;
@@ -137,11 +144,17 @@ const extent = (img) => {
 };
 /**
  * Moongate opening phases (0x40 closed .. 0x43 open), as in the original: the gate grows out of the ground,
- * squashed vertically to 1/4, 1/2, 3/4 and full height on the same ground line, and fading in.
+ * scaled (nearest) to 2/5, 3/5, 4/5 and full size on the same ground line, centred, and fading in. A vertical
+ * squash alone read as a glowing puddle in the first phases.
  */
 const moongatePhase = (img, k) => {
-  const [top, bottom] = extent(img), h = bottom - top + 1, shown = Math.max(2, Math.round(h * (k + 1) / 4));
-  const out = rows(img, (y) => (y > bottom || y <= bottom - shown ? -1 : bottom - Math.floor((bottom - y) * h / shown)));
+  const [, bottom] = extent(img), z = (k + 2) / 5, cx = img.width / 2;
+  const out = blank(img.width, img.height);
+  for (let y = 0; y <= bottom; y++) for (let x = 0; x < img.width; x++) {
+    const sx = Math.floor(cx + (x + 0.5 - cx) / z), sy = Math.floor(bottom + 0.5 - (bottom + 0.5 - y) / z);
+    if (sx < 0 || sx >= img.width || sy < 0) continue;
+    img.data.copy(out.data, (y * img.width + x) * 4, (sy * img.width + sx) * 4, (sy * img.width + sx + 1) * 4);
+  }
   for (let p = 3; p < out.data.length; p += 4) out.data[p] = Math.round(out.data[p] * (0.55 + 0.15 * k));
   return out;
 };
@@ -189,6 +202,8 @@ const OBJECTS = [
   ["altar", [0x4a], "altar", null, 62],
   ["ladder-up", [0x1b], "ladder-up", null, 62],
   ["ladder-down", [0x1c], "ladder-down", null, 62],
+  ["mast", [0x35], "mast", null, 63],
+  ["wheel", [0x36], "wheel", null, 63],
 ];
 const underlay = { 9: 8, 10: 4, 11: 4, 14: 4, 30: 4 };
 const objects = [];
@@ -205,8 +220,8 @@ for (const [name, ids, pick, derive, under] of OBJECTS) {
 const TILES = [
   ["brick-floor", [0x3e]], ["wood-floor", [0x3f]], ["dungeon-floor", [0x16]], ["wall", [0x7f]], ["secret-door", [0x49]],
   ["solid", [0x48]], ["rubble", [0x39]], ["door", [0x3a]], ["locked-door", [0x3b]],
-  ["lava", [0x4c], [1, 0]], ["poison-field", [0x44], [1, 1]], ["energy-field", [0x45], [1, 0]],
-  ["fire-field", [0x46], [0, 1]], ["sleep-field", [0x47], [1, 1]],
+  ["poison-field", [0x44], [1, 1]], ["energy-field", [0x45], [1, 0]],
+  ["fire-field", [0x46], [0, -1]], ["sleep-field", [0x47], [1, 1]],
 ];
 /** The secret door is the wall with a hairline crack (the original marks it with one dot). */
 const secretDoor = (wall) => {
@@ -235,7 +250,7 @@ const pack = {
   fallback: "scale4x-derived",
   fps: 6,
   base: { image: "terrain/base.png", scroll: [1, 0] },
-  terrainIds: range(0, 9),
+  terrainIds: [...range(0, 9), LAVA],
   layers,
   underlay,
   // diagonal shores (towns, ship prows in combat): plain shallows
@@ -259,7 +274,7 @@ checkSheet();
 function checkSheet() {
   const Z = 3, C = SIZE * Z + 6;
   const ground = (id) => {
-    if (tileImgs[{ 62: "brick-floor", 22: "dungeon-floor" }[id]]) return tileImgs[{ 62: "brick-floor", 22: "dungeon-floor" }[id]];
+    if (tileImgs[{ 62: "brick-floor", 22: "dungeon-floor", 63: "wood-floor" }[id]]) return tileImgs[{ 62: "brick-floor", 22: "dungeon-floor", 63: "wood-floor" }[id]];
     const f = { 1: "tileset-deep/1111.png", 2: "tileset-shallows/1111.png", 4: "tileset-coast/1111.png" }[id] ?? "tileset-coast/1111.png";
     return read(path.join(SRC, f));
   };
@@ -298,7 +313,7 @@ function checkSheet() {
   for (const o of objects) for (const id of o.ids) byId[id] = { sprite: o.img, under: o.under };
   for (let y = 0; y < TH; y++) for (let x = 0; x < TW; x++) {
     const id = town[(TY + y) * 32 + TX + x], e = byId[id], x0 = 4 + x * SIZE * 2, y0 = y1 + y * SIZE * 2;
-    const g = e?.tile ?? (e?.sprite ? (e.under === 62 || e.under === 22 ? ground(e.under) : terrain[e.under]) : terrain[id]);
+    const g = e?.tile ?? (e?.sprite ? (e.under === 62 || e.under === 22 || e.under === 63 ? ground(e.under) : terrain[e.under]) : terrain[id]);
     if (g) put(g, x0, y0, 2, 0, 0, SIZE, SIZE);
     if (e?.sprite) put(e.sprite, x0, y0, 2);
   }

@@ -8,11 +8,11 @@
   "image": "terrain/base.png",
   "scroll": [1, 0]
  },
- "terrainIds": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+ "terrainIds": [0, 1, 2, 3, 4, 5, 6, 7, 8, 76],
  "layers": [
   {
    "name": "sea",
-   "members": [1, 2, 3, 4, 5, 6, 7, 8],
+   "members": [1, 2, 3, 4, 5, 6, 7, 8, 76],
    "image": "terrain/sea.png",
    "fill": "terrain/sea-fill.png",
    "scroll": [1, 0]
@@ -26,7 +26,7 @@
   },
   {
    "name": "land",
-   "members": [3, 4, 5, 6, 7, 8],
+   "members": [3, 4, 5, 6, 7, 8, 76],
    "image": "terrain/land.png"
   },
   {
@@ -58,6 +58,14 @@
    "members": [8],
    "image": "terrain/mountains.png",
    "clip": "land"
+  },
+  {
+   "name": "lava",
+   "members": [76],
+   "image": "terrain/lava.png",
+   "fill": "terrain/lava-fill.png",
+   "scroll": [1, 0],
+   "clip": "land"
   }
  ],
  "underlay": {
@@ -81,6 +89,8 @@
   "29": 4,
   "30": 4,
   "48": 62,
+  "53": 63,
+  "54": 63,
   "55": 4,
   "56": 62,
   "60": 62,
@@ -860,6 +870,24 @@
    "h": 32,
    "frames": 1,
    "dy": 0
+  },
+  {
+   "name": "mast",
+   "ids": [53],
+   "image": "sprites/mast.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
+  },
+  {
+   "name": "wheel",
+   "ids": [54],
+   "image": "sprites/wheel.png",
+   "w": 32,
+   "h": 32,
+   "frames": 1,
+   "dy": 0
   }
  ],
  "tiles": [
@@ -918,13 +946,6 @@
    "frames": 1
   },
   {
-   "name": "lava",
-   "ids": [76],
-   "image": "tiles/lava.png",
-   "frames": 1,
-   "scroll": [1, 0]
-  },
-  {
    "name": "poison-field",
    "ids": [68],
    "image": "tiles/poison-field.png",
@@ -943,7 +964,7 @@
    "ids": [70],
    "image": "tiles/fire-field.png",
    "frames": 1,
-   "scroll": [0, 1]
+   "scroll": [0, -1]
   },
   {
    "name": "sleep-field",
