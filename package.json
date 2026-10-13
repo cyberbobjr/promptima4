@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:itch": "tsc --noEmit && vite build --mode itch --base ./ --outDir dist-itch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "extract": "tsx tools/extract-assets.ts",
