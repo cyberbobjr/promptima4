@@ -14,7 +14,8 @@ export interface Config {
   /** font: "auto" = original 8x8 font for English with the original tiles, the modern font otherwise. */
   /** title: "modern" = the port's title screen (src/ui/dom/title.ts), "classic" = TITLE.EXE's. */
   display: { font: "auto" | "original" | "modern"; smoothing: boolean; keepAspect: boolean; title: "modern" | "classic" };
-  controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number };
+  /** barCollapsed: the command bar folded away by its handle (remembered). */
+  controls: { tapToMove: boolean; commandBar: "auto" | "always" | "never"; inputTimeoutSeconds: number; barCollapsed: boolean };
   /**
    * Sound effects; volume 0..1. V)olume toggles `enabled` in the game. pack: a sound pack under
    * assets/sounds/ (src/audio/sounds.ts), "classic" = the PC-speaker effects (src/audio/speaker.ts).

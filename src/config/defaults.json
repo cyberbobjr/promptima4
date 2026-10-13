@@ -19,7 +19,8 @@
   "controls": {
     "tapToMove": true,
     "commandBar": "auto",
-    "inputTimeoutSeconds": 8
+    "inputTimeoutSeconds": 8,
+    "barCollapsed": false
   },
   "sound": {
     "enabled": true,

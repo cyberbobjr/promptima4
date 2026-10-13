@@ -9,5 +9,7 @@
   "ui.north": "North",
   "ui.south": "South",
   "ui.east": "East",
-  "ui.west": "West"
+  "ui.west": "West",
+  "ui.barHide": "Hide the commands",
+  "ui.barShow": "Show the commands"
 }

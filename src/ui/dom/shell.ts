@@ -1,7 +1,7 @@
 // The page around the game: the canvas stage (with the overlay for panels and pointer input) and the
 // command bar. Panels register themselves as menu entries here.
 import type { Game } from "../../game/game";
-import { config } from "../../config/config";
+import { config, updateConfig } from "../../config/config";
 import { t } from "../../i18n/i18n";
 import { CommandBar, type MenuEntry } from "./commandBar";
 import { h } from "./dom";
@@ -29,10 +29,24 @@ export function createShell(canvas: HTMLCanvasElement, g: Game): Shell {
   const menus: MenuEntry[] = [];
   const bar = new CommandBar(g, menus, () => openTextEntry(overlay, g));
   app.append(stage, bar.root);
+  // a discreet handle on the edge of the stage folds the bar away (saved in the settings)
+  const handle = h("button", {
+    type: "button", class: "bar-handle",
+    onclick: () => { void updateConfig({ controls: { barCollapsed: !config().controls.barCollapsed } }).then(showBar); },
+  });
+  stage.append(handle);
   const showBar = () => {
     const mode = config().controls.commandBar;
     const touch = matchMedia("(pointer: coarse)").matches;
-    app.classList.toggle("no-bar", mode === "never" || (mode === "auto" && !touch && !matchMedia("(min-width: 1100px)").matches));
+    const none = mode === "never" || (mode === "auto" && !touch && !matchMedia("(min-width: 1100px)").matches);
+    const folded = config().controls.barCollapsed;
+    const changed = app.classList.contains("bar-folded") !== (folded && !none);
+    app.classList.toggle("no-bar", none);
+    app.classList.toggle("bar-folded", folded && !none);
+    handle.title = handle.ariaLabel = t(folded ? "ui.barShow" : "ui.barHide");
+    handle.setAttribute("aria-expanded", folded ? "false" : "true");
+    // the canvas fits the new room (the renderer follows window resizes)
+    if (changed) dispatchEvent(new Event("resize"));
   };
   showBar();
   addEventListener("resize", showBar);
